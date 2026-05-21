@@ -18,6 +18,7 @@ import Lead_form from '../components/Leads/Lead_form';
 import Notes from '../components/Deals/Notes';
 import Leads_messages from '../components/Leads/Leads_messages';
 import StatusTimeline from '../components/Leads/StatusTimeline';
+import Delete_Lead from '../components/Leads/Delete_Lead';
 // Filter Components
 import DateFilter from '../components/Filteration/Date';
 import { FollowUp } from '../components/Filteration/FollowUp';
@@ -32,7 +33,7 @@ const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClos
   <div
     style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.5)", zIndex: 9999,
+      backgroundColor: "rgba(0, 0, 0, 0.5)", zIndex: 10000,
       display: "flex", alignItems: "center", justifyContent: "center"
     }}
     onClick={onClose}
@@ -83,8 +84,21 @@ const Leads = () => {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isStatusTimelineOpen, setIsStatusTimelineOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<{ index: number; name: string; date: string } | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
+
+  const openDeleteModal = (
+    e: React.MouseEvent,
+    index: number,
+    name: string,
+    date: string,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpenActionMenu(null);
+    setLeadToDelete({ index, name, date });
+  };
   const dropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
   const actionMenuRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -793,12 +807,9 @@ const Leads = () => {
                     {/* Delete */}
                     <div 
                       style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", width: "100%", boxSizing: "border-box", borderRadius: 8 }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#F3F4F6"}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#FEF2F2"}
                       onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                      onClick={() => {
-                        setLeads(prev => prev.filter((_, idx) => idx !== originalIndex));
-                        setOpenActionMenu(null);
-                      }}
+                      onClick={(e) => openDeleteModal(e, originalIndex, lead.name, lead.assignDate)}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
                         <path d="M4 6.17647H20M10 16.7647V10.4118M14 16.7647V10.4118M16 21H8C6.89543 21 6 20.0519 6 18.8824V7.23529C6 6.65052 6.44772 6.17647 7 6.17647H17C17.5523 6.17647 18 6.65052 18 7.23529V18.8824C18 20.0519 17.1046 21 16 21ZM10 6.17647H14C14.5523 6.17647 15 5.70242 15 5.11765V4.05882C15 3.47405 14.5523 3 14 3H10C9.44772 3 9 3.47405 9 4.05882V5.11765C9 5.70242 9.44772 6.17647 10 6.17647Z" stroke="#A80D0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -860,6 +871,19 @@ const Leads = () => {
       {isStatusTimelineOpen && (
         <ModalOverlay onClose={() => setIsStatusTimelineOpen(false)}>
           <StatusTimeline onClose={() => setIsStatusTimelineOpen(false)} leadName="John Dorghamasadsad" />
+        </ModalOverlay>
+      )}
+      {leadToDelete && (
+        <ModalOverlay onClose={() => setLeadToDelete(null)}>
+          <Delete_Lead
+            leadName={leadToDelete.name}
+            leadDate={leadToDelete.date}
+            onClose={() => setLeadToDelete(null)}
+            onConfirm={() => {
+              setLeads((prev) => prev.filter((_, idx) => idx !== leadToDelete.index));
+              setLeadToDelete(null);
+            }}
+          />
         </ModalOverlay>
       )}
 

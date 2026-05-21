@@ -24,6 +24,7 @@ import Sales_Tasks from '../components/Sales/Sales_Tasks';
 import { Sales_Card } from '../components/Sales/Sales_Card';
 import { Edit_Sales_Role } from '../components/Sales/Edit_Sales_Role';
 import { View_info } from '../components/Sales/View_info';
+import Delete_Sales from '../components/Sales/Delete_Sales';
 import '../styles/Sales.css';// Reusable overlay for modals
 const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => {
   useEffect(() => {
@@ -39,7 +40,7 @@ const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClos
       style={{
         position: "fixed", top: 0, left: 0,
         width: "100vw", height: "100vh",
-        backgroundColor: "rgba(0, 0, 0, 0.5)", zIndex: 9999,
+        backgroundColor: "rgba(0, 0, 0, 0.5)", zIndex: 10000,
         overflowY: "auto",
       }}
       onClick={onClose}
@@ -95,6 +96,13 @@ const Sales: React.FC = () => {
   const [isAddNewTaskOpen, setIsAddNewTaskOpen] = useState(false);
   const [isEditTargetOpen, setIsEditTargetOpen] = useState(false);
   const [isSalesTasksOpen, setIsSalesTasksOpen] = useState(false);
+  const [salesToDelete, setSalesToDelete] = useState<{ id: number; name: string; date: string } | null>(null);
+
+  const openDeleteSalesModal = (id: number, name: string, date: string) => {
+    setOpenActionMenu(null);
+    setSalesToDelete({ id, name, date });
+  };
+
   const [salesListItems, setSalesListItems] = useState([
     { id: 1, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30 },
     { id: 2, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30 },
@@ -574,13 +582,14 @@ const Sales: React.FC = () => {
             marginBottom: 24,
           }}
         >
-          {[1, 2, 3, 4, 5, 6].map((item) => (
-            <Sales_Card 
-              key={item} 
-              onAssignTask={() => setIsAddNewTaskOpen(true)} 
+          {salesListItems.map((item) => (
+            <Sales_Card
+              key={item.id}
+              onAssignTask={() => setIsAddNewTaskOpen(true)}
               onPauseAccount={() => setIsPauseAccountOpen(true)}
               onEditTarget={() => setIsEditTargetOpen(true)}
               onViewTasks={() => setIsSalesTasksOpen(true)}
+              onDelete={() => openDeleteSalesModal(item.id, item.name, item.lastActive)}
             />
           ))}
         </div>
@@ -735,10 +744,7 @@ const Sales: React.FC = () => {
                     setIsViewInfoOpen(true);
                     setOpenActionMenu(null);
                   }}
-                  onDelete={() => {
-                    setSalesListItems(prev => prev.filter(i => i.id !== item.id));
-                    setOpenActionMenu(null);
-                  }}
+                  onDelete={() => openDeleteSalesModal(item.id, item.name, item.lastActive)}
                 />
               )}
             </div>
@@ -814,6 +820,19 @@ const Sales: React.FC = () => {
                   s.id === editingSalesId ? { ...s, role: newRole, targetAdj: newTargetAdj } : s
                 )
               );
+            }}
+          />
+        </ModalOverlay>
+      )}
+      {salesToDelete && (
+        <ModalOverlay onClose={() => setSalesToDelete(null)}>
+          <Delete_Sales
+            salesName={salesToDelete.name}
+            salesDate={salesToDelete.date}
+            onClose={() => setSalesToDelete(null)}
+            onConfirm={() => {
+              setSalesListItems((prev) => prev.filter((i) => i.id !== salesToDelete.id));
+              setSalesToDelete(null);
             }}
           />
         </ModalOverlay>
