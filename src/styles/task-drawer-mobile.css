@@ -1,0 +1,53 @@
+/* =============================================
+   Task Drawer Mobile Responsive Styles
+   Only applies on screens ≤ 768px
+   Desktop / laptop inline styles are UNTOUCHED
+   ============================================= */
+
+@media (max-width: 768px) {
+  .task-drawer-container {
+    width: 100vw !important;
+  }
+  
+  .task-drawer-tabs-wrapper {
+    width: 100% !important;
+  }
+
+  .task-drawer-tab {
+    flex: 1 !important;
+    width: auto !important;
+  }
+
+  .task-drawer-list {
+    width: 100% !important;
+  }
+
+  .task-drawer-footer-btn {
+    width: 100% !important;
+  }
+
+  .task-card-details {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .task-card-details-left,
+  .task-card-details-right {
+    width: 100% !important;
+    padding-left: 0 !important;
+  }
+  
+  .task-card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  
+  .task-card-header-actions {
+    align-self: flex-end !important;
+  }
+  
+  .task-drawer-close-btn {
+    display: flex !important;
+  }
+}

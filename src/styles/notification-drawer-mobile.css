@@ -1,0 +1,15 @@
+/* =============================================
+   Notification Drawer Mobile Responsive Styles
+   Only applies on screens ≤ 768px
+   Desktop / laptop inline styles are UNTOUCHED
+   ============================================= */
+
+@media (max-width: 768px) {
+  .notification-drawer-container {
+    width: 100vw !important;
+  }
+  
+  .notification-drawer-item {
+    width: 100% !important;
+  }
+}

@@ -1,0 +1,41 @@
+@media (max-width: 768px) {
+  .sales-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px;
+  }
+  .sales-header-actions {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  .time-range-container {
+    flex-direction: column !important;
+    gap: 16px;
+  }
+  .time-range-left {
+    width: 100% !important;
+  }
+  .filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px;
+    height: auto !important;
+  }
+  .filter-left {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .filter-search {
+    width: 100% !important;
+  }
+  .filter-buttons {
+    flex-wrap: wrap !important;
+  }
+  .table-container {
+    overflow-x: auto !important;
+  }
+  .table-inner {
+    min-width: 1000px !important;
+  }
+}

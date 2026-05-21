@@ -1,0 +1,86 @@
+/* =============================================
+   Leads Modals - Mobile Responsive Styles
+   Only applies on screens ≤ 768px
+   Desktop / laptop inline styles are UNTOUCHED
+   ============================================= */
+
+@media (max-width: 768px) {
+
+  /* ── Shared wrapper (centered overlay) ── */
+  .leads-modal-root {
+    width: calc(100vw - 32px) !important;
+    max-height: 88vh !important;
+    height: auto !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* ── Task details (narrower 375px modal) ── */
+  .leads-task-modal-root {
+    width: calc(100vw - 32px) !important;
+    max-height: 88vh !important;
+    height: auto !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+  }
+
+  /* ── Headers that share the same fixed width ── */
+  .leads-modal-header {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Body / scrollable section ── */
+  .leads-modal-body {
+    width: 100% !important;
+    height: auto !important;
+    max-height: calc(88vh - 100px) !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Inner form / content containers ── */
+  .leads-modal-inner {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .leads-grid-mobile {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto !important;
+    max-height: calc(88vh - 150px) !important;
+  }
+
+  /* ── Tailwind-based modals (Notes, Leads_messages) ── */
+  .leads-tw-modal {
+    width: calc(100vw - 32px) !important;
+    height: auto !important;
+    max-height: 88vh !important;
+    overflow: hidden !important;
+  }
+
+  .leads-tw-modal-header {
+    width: 100% !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .leads-tw-modal-body {
+    width: 100% !important;
+    height: auto !important;
+    max-height: calc(88vh - 100px) !important;
+    overflow-y: auto !important;
+  }
+
+  /* ── Footer / save buttons ── */
+  .leads-modal-footer {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .leads-modal-footer-btn {
+    width: 100% !important;
+  }
+}

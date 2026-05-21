@@ -1,0 +1,117 @@
+/* =============================================
+   Mobile Navigation Styles
+   Only applies on screens ≤ 768px
+   Desktop / laptop inline styles are UNTOUCHED
+   ============================================= */
+
+/* ── Hamburger button: hidden on desktop ── */
+.mobile-hamburger {
+  display: none;
+}
+
+/* ── Sidebar mobile overlay backdrop and drawer ── */
+.mobile-sidebar-backdrop,
+.mobile-sidebar-drawer {
+  display: none;
+}
+
+@media (max-width: 768px) {
+
+  /* Hide the sidebar completely on mobile */
+  .layout-sidebar {
+    display: none !important;
+  }
+
+  /* Show hamburger button */
+  .mobile-hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    flex-shrink: 0;
+    z-index: 50;
+  }
+
+  .mobile-hamburger:active {
+    background: rgba(0, 35, 111, 0.08);
+  }
+
+  /* Slide-in sidebar drawer on mobile */
+  .mobile-sidebar-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 94px; /* match Sidebar width */
+    height: 100vh;
+    background: transparent;
+    z-index: 500;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.18);
+  }
+
+  .mobile-sidebar-drawer.open {
+    transform: translateX(0);
+  }
+
+  /* Backdrop when drawer is open */
+  .mobile-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 499;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .mobile-sidebar-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Compact main content on mobile (no left sidebar offset) */
+  .layout-main {
+    width: 100% !important;
+  }
+
+  /* Reduce top padding on mobile */
+  .layout-content {
+    padding: 16px 12px !important;
+    margin-top: 72px !important;
+  }
+
+  /* Navbar */
+  .layout-navbar {
+    padding: 0 16px !important;
+  }
+  .navbar-search {
+    width: auto !important;
+    flex: 1 !important;
+    margin: 0 12px !important;
+  }
+  .navbar-right {
+    gap: 12px !important;
+  }
+
+  /* ── Notification Dropdown ── */
+  .navbar-notifications-dropdown {
+    width: calc(100vw - 32px) !important;
+    right: 16px !important;
+  }
+  .navbar-notifications-box {
+    width: 100% !important;
+  }
+  .navbar-notifications-pointer {
+    left: auto !important;
+    right: 74px !important;
+  }
+}

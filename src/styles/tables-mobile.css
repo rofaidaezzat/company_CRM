@@ -1,0 +1,72 @@
+/* =============================================
+   Tables & Page Headers Mobile Responsive Styles
+   Only applies on screens ≤ 768px
+   Desktop / laptop inline styles are UNTOUCHED
+   ============================================= */
+
+@media (max-width: 768px) {
+
+  /* ── Page Header ── */
+  .page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    height: auto !important;
+  }
+
+  /* ── Filter Bar ── */
+  .filter-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    height: auto !important;
+    padding: 16px !important;
+    gap: 16px !important;
+  }
+
+  .filter-bar-left, .filter-bar-right {
+    width: 100% !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .filter-bar-left > div, .filter-bar-right > div {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+
+  .filter-bar-left input {
+    width: 100% !important;
+  }
+  
+  .filter-bar-right button {
+    width: 100% !important;
+  }
+
+  /* ── Responsive Tables ── */
+  /* We allow the main container to scroll horizontally */
+  .responsive-table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* We force the rows (header & body) to have a minimum width 
+     so they don't squish or interleave on small screens */
+  .responsive-table-row {
+    min-width: 1100px !important;
+  }
+
+  /* ── Filter Dropdown Modals ── */
+  .filter-dropdown-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    z-index: 1000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-top: 0 !important;
+  }
+}

@@ -1,0 +1,103 @@
+/* =============================================
+   Overview Page – Mobile Responsive Styles
+   Only applies on screens ≤ 768px (mobile)
+   Desktop / laptop inline styles are UNTOUCHED
+   ============================================= */
+
+@media (max-width: 768px) {
+
+  /* ── Header ── */
+  .overview-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .overview-header-commission {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Main two-column area → stack vertically ── */
+  .overview-main {
+    flex-direction: column !important;
+  }
+
+  .overview-left {
+    min-width: 0 !important;
+    width: 100% !important;
+    flex: unset !important;
+  }
+
+  .overview-right {
+    min-width: 0 !important;
+    width: 100% !important;
+    flex: unset !important;
+  }
+
+  /* ── Summary cards: single column on mobile ── */
+  .overview-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Followups Table: auto height + horizontal scroll ── */
+  .overview-followups {
+    height: auto !important;
+    overflow-x: auto !important;
+  }
+
+  .overview-table-header {
+    min-width: 520px;
+  }
+
+  .overview-table-rows-wrapper {
+    overflow-x: auto !important;
+    height: auto !important;
+    max-height: 300px;
+  }
+
+  .overview-table-row {
+    min-width: 520px;
+  }
+
+  /* ── Calendar: auto height ── */
+  .overview-calendar {
+    height: auto !important;
+  }
+
+  /* ── Revenue Target: auto height ── */
+  .overview-revenue {
+    height: auto !important;
+  }
+
+  /* ── Bottom charts: stack vertically ── */
+  .overview-bottom {
+    flex-direction: column !important;
+  }
+
+  .overview-chart-funnel,
+  .overview-chart-leads {
+    min-width: 0 !important;
+    width: 100% !important;
+    height: 550px !important;
+  }
+
+  .overview-chart-inner {
+    min-width: 600px !important;
+    height: 400px !important;
+    position: relative !important;
+  }
+
+  .overview-chart-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .overview-chart-header > div {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+}

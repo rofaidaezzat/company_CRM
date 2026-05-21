@@ -1,0 +1,51 @@
+/* =============================================
+   Task Modal Mobile Responsive Styles
+   Only applies on screens ≤ 768px
+   Desktop / laptop inline styles are UNTOUCHED
+   ============================================= */
+
+@media (max-width: 768px) {
+  .task-modal-container {
+    width: calc(100vw - 32px) !important;
+    height: auto !important;
+    max-height: 85vh !important;
+    border-radius: 12px !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 2000 !important;
+  }
+  .task-modal-header {
+    width: 100% !important;
+  }
+  .task-modal-body {
+    width: 100% !important;
+    height: auto !important;
+    max-height: calc(85vh - 152px) !important; /* accounting for header & footer */
+    overflow-y: auto !important;
+  }
+  .task-modal-form {
+    width: calc(100% - 40px) !important;
+    height: auto !important;
+    padding-bottom: 90px !important; /* Extra space for sticky footer */
+  }
+  .task-modal-dropdown {
+    width: 100% !important;
+    left: 0 !important;
+  }
+  .task-modal-dropdown-inner {
+    width: 100% !important;
+  }
+  .task-modal-footer {
+    width: 100% !important;
+    border-radius: 0 0 12px 12px !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 100 !important;
+  }
+  .task-modal-footer-btn {
+    width: 100% !important;
+  }
+}

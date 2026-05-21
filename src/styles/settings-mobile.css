@@ -1,0 +1,90 @@
+/* =============================================
+   Settings Page Mobile Styles
+   Applies only on screens ≤ 768px
+   ============================================= */
+
+@media (max-width: 768px) {
+  .settings-page-root {
+    width: 100% !important;
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .settings-page-inner,
+  .settings-profile-card,
+  .settings-bottom-row {
+    width: 100% !important;
+  }
+
+  .settings-profile-card {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .settings-profile-card > div:last-child {
+    overflow: visible !important;
+  }
+
+  .settings-bottom-row {
+    flex-direction: column !important;
+    height: auto !important;
+    gap: 24px !important;
+  }
+
+  .settings-account-card,
+  .settings-business-card {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .settings-account-card > div:last-child,
+  .settings-business-card > div:last-child {
+    overflow: visible !important;
+  }
+
+  .settings-profile-body {
+    flex-direction: column !important;
+  }
+
+  .settings-profile-divider {
+    width: 100% !important;
+    height: 1px !important;
+    min-height: 1px !important;
+  }
+
+  .settings-profile-left {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    height: auto !important;
+  }
+
+  .settings-profile-description {
+    width: 100% !important;
+    flex-shrink: 1 !important;
+  }
+
+  .settings-profile-left > div {
+    align-items: center !important;
+  }
+
+  .settings-profile-left > div > div:nth-child(2) {
+    align-self: center !important;
+  }
+
+  .settings-profile-contact-grid {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+
+  .settings-profile-contact-grid > div {
+    justify-content: center !important;
+  }
+
+  .settings-profile-description > div:first-child {
+    flex-direction: column !important;
+    gap: 12px !important;
+    align-items: flex-start !important;
+  }
+}
