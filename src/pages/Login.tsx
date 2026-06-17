@@ -1,16 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import rightImage from '../assets/7a32fb9fa7972d76a87f5709de18f309ed2c16f1.png';
+import { useLoginMutation } from '../app/service/crudauth';
+import { toast } from 'sonner';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [login, { isLoading }] = useLoginMutation();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Add authentication logic here if needed
-    navigate('/overview');
+    if (!email.trim() || !password.trim()) {
+      toast.error('Email and password are required');
+      return;
+    }
+    try {
+      await login({ email, password }).unwrap();
+      toast.success('Logged in successfully!');
+      navigate('/overview');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      const errMsg = err?.data?.message || err?.message || 'Login failed';
+      toast.error(errMsg);
+    }
   };
 
   return (
@@ -161,8 +175,9 @@ const Login: React.FC = () => {
               {/* Login Button */}
               <button 
                 type="submit"
+                disabled={isLoading}
                 style={{
-                  background: "rgba(0, 35, 111, 1)",
+                  background: isLoading ? "rgba(0, 35, 111, 0.5)" : "rgba(0, 35, 111, 1)",
                   width: 380,
                   height: 48,
                   borderRadius: 12,
@@ -171,13 +186,13 @@ const Login: React.FC = () => {
                   fontSize: 16,
                   fontWeight: 500,
                   border: "none",
-                  cursor: "pointer",
+                  cursor: isLoading ? "not-allowed" : "pointer",
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center"
                 }}
               >
-                Login
+                {isLoading ? "Logging in..." : "Login"}
               </button>
 
             </form>

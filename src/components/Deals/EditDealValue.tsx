@@ -1,20 +1,58 @@
 import React, { useState } from "react";
 import closeIcon from "../../assets/x-02.svg";
 import "../../styles/leads-modal-mobile.css";
+import { useUpdateDealMutation } from "../../app/service/cruddeals";
+import { toast } from "sonner";
 
 interface EditDealValueProps {
   onClose?: () => void;
-  onSave?: (value: string) => void;
-  initialValue?: string;
+  onSave?: (value: number) => void;
+  initialValue?: string | number;
+  dealId?: string;
 }
 
-const EditDealValue: React.FC<EditDealValueProps> = ({ onClose, onSave, initialValue = "120,000,00" }) => {
-  const [value, setValue] = useState(initialValue);
+const EditDealValue: React.FC<EditDealValueProps> = ({ onClose, onSave, initialValue = "0", dealId }) => {
+  // Convert initialValue to string format for the text input
+  const cleanInitialValue = typeof initialValue === 'number' 
+    ? String(initialValue) 
+    : String(initialValue).replace(/,/g, '');
+  const [value, setValue] = useState(cleanInitialValue);
+  const [updateDeal, { isLoading }] = useUpdateDealMutation();
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave(value);
+  const handleSave = async () => {
+    const cleanValue = value.replace(/,/g, '').trim();
+    if (!cleanValue) {
+      toast.error("Value is required");
+      return;
     }
+    const numericValue = Number(cleanValue);
+    if (isNaN(numericValue) || numericValue < 0) {
+      toast.error("Please enter a valid positive number");
+      return;
+    }
+
+    if (dealId) {
+      try {
+        await updateDeal({
+          id: dealId,
+          body: { value: numericValue }
+        }).unwrap();
+        toast.success("Deal value updated successfully");
+        if (onSave) {
+          onSave(numericValue);
+        }
+      } catch (err: any) {
+        console.error("Failed to update deal value:", err);
+        const errMsg = err?.data?.message || err?.message || "Failed to update deal value";
+        toast.error(Array.isArray(errMsg) ? errMsg.join(", ") : errMsg);
+        return; // Don't close modal on error
+      }
+    } else {
+      if (onSave) {
+        onSave(numericValue);
+      }
+    }
+
     if (onClose) {
       onClose();
     }
@@ -132,27 +170,28 @@ const EditDealValue: React.FC<EditDealValueProps> = ({ onClose, onSave, initialV
         <button
           className="leads-modal-footer-btn"
           onClick={handleSave}
+          disabled={isLoading}
           style={{
             marginTop: 59,
             width: "100%",
             height: 48,
             borderRadius: 12,
-            background: "#00236F",
+            background: isLoading ? "rgba(212, 213, 216, 1)" : "#00236F",
             display: "flex",
             padding: "8px 24px",
             justifyContent: "center",
             alignItems: "center",
             gap: 8,
-            color: "#fff",
+            color: isLoading ? "#9CA3AF" : "#fff",
             fontFamily: "Inter, sans-serif",
             fontWeight: 600,
             fontSize: 15,
             border: "none",
-            cursor: "pointer",
+            cursor: isLoading ? "not-allowed" : "pointer",
             boxSizing: "border-box",
           }}
         >
-          Save
+          {isLoading ? "Saving..." : "Save"}
         </button>
       </div>
     </div>

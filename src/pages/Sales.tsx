@@ -1,12 +1,12 @@
-import { ArrowDownUp, ChevronDown } from 'lucide-react';
+import { ArrowDownUp, ChevronDown, ChevronUp } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import filterIcon from '../assets/filter.svg';
+import starsIcon from '../assets/stars.svg';
 // Filter Components
 import DateFilter from '../components/Filteration/Date';
 import { FollowUp } from '../components/Filteration/FollowUp';
 import { Sort } from '../components/Filteration_Manager/Sort';
 import Source from '../components/Filteration/Source';
-import Status from '../components/Filteration/Status';
 import Priority from '../components/Filteration/Priority';
 import Pagination from '../components/Pagination';
 import { Pause_Account } from '../components/Sales/Pause_Account';
@@ -15,7 +15,7 @@ import { Action_Modal } from '../components/Sales/Action_Modal';
 import Rank from '../components/Filteration_Manager/Rank';
 import Leads_status from '../components/Filteration_Manager/Leads_status';
 import LeadsFilter from '../components/Filteration_Manager/Leads';
-import StatusFilter from '../components/Filteration_Manager/Status';
+import StatusFilter from '../components/Filteration/Status';
 import Deals from '../components/Filteration_Manager/Deals';
 import Target from '../components/Filteration_Manager/Target';
 import Add_New_Task from '../components/Sales/Add_New_Task';
@@ -61,23 +61,23 @@ const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClos
   );
 };
 
-const GridIcon = () => (
+const GridIcon = ({ active }: { active: boolean }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
-    <path d="M6.75 2.25H3C2.58579 2.25 2.25 2.58579 2.25 3V6.75C2.25 7.16421 2.58579 7.5 3 7.5H6.75C7.16421 7.5 7.5 7.16421 7.5 6.75V3C7.5 2.58579 7.16421 2.25 6.75 2.25Z" stroke="#00236F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M15 2.25H11.25C10.8358 2.25 10.5 2.58579 10.5 3V6.75C10.5 7.16421 10.8358 7.5 11.25 7.5H15C15.4142 7.5 15.75 7.16421 15.75 6.75V3C15.75 2.58579 15.4142 2.25 15 2.25Z" stroke="#00236F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M15 10.5H11.25C10.8358 10.5 10.5 10.8358 10.5 11.25V15C10.5 15.4142 10.8358 15.75 11.25 15.75H15C15.4142 15.75 15.75 15.4142 15.75 15V11.25C15.75 10.8358 15.4142 10.5 15 10.5Z" stroke="#00236F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M6.75 10.5H3C2.58579 10.5 2.25 10.8358 2.25 11.25V15C2.25 15.4142 2.58579 15.75 3 15.75H6.75C7.16421 15.75 7.5 15.4142 7.5 15V11.25C7.5 10.8358 7.16421 10.5 6.75 10.5Z" stroke="#00236F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6.75 2.25H3C2.58579 2.25 2.25 2.58579 2.25 3V6.75C2.25 7.16421 2.58579 7.5 3 7.5H6.75C7.16421 7.5 7.5 7.16421 7.5 6.75V3C7.5 2.58579 7.16421 2.25 6.75 2.25Z" stroke={active ? "#00236F" : "#747474"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M15 2.25H11.25C10.8358 2.25 10.5 2.58579 10.5 3V6.75C10.5 7.16421 10.8358 7.5 11.25 7.5H15C15.4142 7.5 15.75 7.16421 15.75 6.75V3C15.75 2.58579 15.4142 2.25 15 2.25Z" stroke={active ? "#00236F" : "#747474"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M15 10.5H11.25C10.8358 10.5 10.5 10.8358 10.5 11.25V15C10.5 15.4142 10.8358 15.75 11.25 15.75H15C15.4142 15.75 15.75 15.4142 15.75 15V11.25C15.75 10.8358 15.4142 10.5 15 10.5Z" stroke={active ? "#00236F" : "#747474"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6.75 10.5H3C2.58579 10.5 2.25 10.8358 2.25 11.25V15C2.25 15.4142 2.58579 15.75 3 15.75H6.75C7.16421 15.75 7.5 15.4142 7.5 15V11.25C7.5 10.8358 7.16421 10.5 6.75 10.5Z" stroke={active ? "#00236F" : "#747474"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
-const ListIcon = () => (
+const ListIcon = ({ active }: { active: boolean }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
-    <path d="M2.25 9H2.2575" stroke="#747474" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M2.25 13.5H2.2575" stroke="#747474" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M2.25 4.5H2.2575" stroke="#747474" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M6 9H15.75" stroke="#747474" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M6 13.5H15.75" stroke="#747474" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M6 4.5H15.75" stroke="#747474" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2.25 9H2.2575" stroke={active ? "#00236F" : "#747474"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2.25 13.5H2.2575" stroke={active ? "#00236F" : "#747474"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2.25 4.5H2.2575" stroke={active ? "#00236F" : "#747474"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6 9H15.75" stroke={active ? "#00236F" : "#747474"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6 13.5H15.75" stroke={active ? "#00236F" : "#747474"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6 4.5H15.75" stroke={active ? "#00236F" : "#747474"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
@@ -87,7 +87,7 @@ type TimeRangeTab = typeof TIME_RANGE_TABS[number];
 type ViewMode = 'grid' | 'list';
 
 const Sales: React.FC = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [activeTab, setActiveTab] = useState<'This month' | 'Last month' | 'This year'>('This month');
   const [currentPage, setCurrentPage] = useState(1);
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
@@ -120,6 +120,24 @@ const Sales: React.FC = () => {
   type ActiveFilter = 'date' | 'status' | 'source' | 'followup' | 'sort' | 'priority' | 'rank' | 'leads_status' | 'leads' | 'status_filter' | 'deals' | 'target' | null;
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>(null);
 
+  // Hover state for filter buttons
+  const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
+
+  // Search state
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // AI Search
+  const [isAISearchOpen, setIsAISearchOpen] = useState(false);
+  const [aiQuery, setAiQuery] = useState("");
+
+  // Selected filter values for badge indicators
+  const [selectedRank, setSelectedRank] = useState<{ from: string; to: string } | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+  const [selectedLeads, setSelectedLeads] = useState<{ from: string; to: string; status: string | null } | null>(null);
+  const [selectedLeadsStatus, setSelectedLeadsStatus] = useState<string[]>([]);
+  const [selectedDealsFilter, setSelectedDealsFilter] = useState<{ from: string; to: string } | null>(null);
+  const [selectedTarget, setSelectedTarget] = useState<{ from: string; to: string } | null>(null);
+
   // Close action menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -135,7 +153,8 @@ const Sales: React.FC = () => {
   // Get current month label e.g. "April 2026"
   const currentMonthLabel = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
-  const filterBtnStyle: React.CSSProperties = {
+  // Helper to build filter button style dynamically based on hover/active/selected state
+  const getFilterBtnStyle = (key: string, isSelected: boolean): React.CSSProperties => ({
     display: "flex",
     alignItems: "center",
     gap: 6,
@@ -143,14 +162,14 @@ const Sales: React.FC = () => {
     borderRadius: 12,
     padding: "0 12px",
     height: 40,
-    background: "transparent",
+    background: (hoveredFilter === key || activeFilter === key || isSelected) ? "#E6E9F1" : "transparent",
     cursor: "pointer",
     fontFamily: "Inter, sans-serif",
     fontSize: 14,
     color: "#4B5563",
-    boxSizing: "border-box",
-    whiteSpace: "nowrap",
-  };
+    boxSizing: "border-box" as const,
+    whiteSpace: "nowrap" as const,
+  });
 
   return (
     <div style={{ width: "100%", paddingBottom: 24, paddingTop: 8 }}>
@@ -264,30 +283,6 @@ const Sales: React.FC = () => {
               boxSizing: 'border-box',
             }}
           >
-            {/* Grid View Button */}
-            <button
-              onClick={() => setViewMode('grid')}
-              style={{
-                flex: 1,
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: 'none',
-                borderRadius: 10,
-                background: viewMode === 'grid' ? '#fff' : 'transparent',
-                cursor: 'pointer',
-                padding: 0,
-                boxShadow: viewMode === 'grid' ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
-                transition: 'background 0.15s, box-shadow 0.15s',
-                flexShrink: 0,
-                alignSelf: 'stretch',
-              }}
-              title="Grid view"
-            >
-              <GridIcon />
-            </button>
-
             {/* List View Button */}
             <button
               onClick={() => setViewMode('list')}
@@ -309,7 +304,31 @@ const Sales: React.FC = () => {
               }}
               title="List view"
             >
-              <ListIcon />
+              <ListIcon active={viewMode === 'list'} />
+            </button>
+
+            {/* Grid View Button */}
+            <button
+              onClick={() => setViewMode('grid')}
+              style={{
+                flex: 1,
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: 'none',
+                borderRadius: 10,
+                background: viewMode === 'grid' ? '#fff' : 'transparent',
+                cursor: 'pointer',
+                padding: 0,
+                boxShadow: viewMode === 'grid' ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                transition: 'background 0.15s, box-shadow 0.15s',
+                flexShrink: 0,
+                alignSelf: 'stretch',
+              }}
+              title="Grid view"
+            >
+              <GridIcon active={viewMode === 'grid'} />
             </button>
           </div>
         </div>
@@ -437,106 +456,279 @@ const Sales: React.FC = () => {
         }}
       >
         {/* Left side: search + filter buttons */}
-        <div className="filter-bar-left" style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "nowrap" }}>
-          {/* Search input */}
-          <div
-            className="filter-search"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              border: "1px solid var(--Foundation-neutral-neutral-100, #D4D5D8)",
-              borderRadius: 12,
-              padding: "8px 12px",
-              height: 40,
-              gap: 8,
-              background: "transparent",
-              width: 362,
-              boxSizing: "border-box",
-            }}
-          >
-            <img src={filterIcon} alt="filter" width={18} height={18} />
-            <input
-              type="text"
-              placeholder="Filter by name, start date,..."
+        <div className="filter-bar-left" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "nowrap" }}>
+          {/* Search / AI Search input */}
+          {isAISearchOpen ? (
+            <div
               style={{
-                border: "none",
-                background: "transparent",
-                outline: "none",
-                flex: 1,
-                fontFamily: "Inter, sans-serif",
-                fontSize: 13,
-                color: "#141414",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                border: "1px solid rgba(212, 213, 216, 1)",
+                borderRadius: 12,
+                padding: "8px 12px",
+                height: 40,
+                gap: 8,
+                background: "#EDEFF2",
+                width: 362,
+                boxSizing: "border-box",
               }}
-            />
-          </div>
+            >
+              <input
+                type="text"
+                placeholder="Describe what you want..."
+                value={aiQuery}
+                onChange={(e) => setAiQuery(e.target.value)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  flex: 1,
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 14,
+                  color: "#141414",
+                }}
+              />
+              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500, color: "#464646", whiteSpace: "nowrap", marginRight: 4, userSelect: "none" }}>
+                (0/5) AI limit
+              </span>
+              <svg onClick={() => setIsAISearchOpen(false)} xmlns="http://www.w3.org/2000/svg" width="19.2" height="19.2" viewBox="0 0 20 20" fill="none" style={{ cursor: "pointer", flexShrink: 0 }}>
+                <path d="M12.4235 0L14.2538 4.94621L19.2 6.77647L14.2538 8.60673L12.4235 13.5529L10.5933 8.60673L5.64706 6.77647L10.5933 4.94621L12.4235 0Z" fill="#00236F"/>
+                <path d="M3.95294 11.2941L5.55177 13.6482L7.90588 15.2471L5.55177 16.8459L3.95294 19.2L2.35411 16.8459L0 15.2471L2.35411 13.6482L3.95294 11.2941Z" fill="#00236F"/>
+              </svg>
+            </div>
+          ) : (
+            <div
+              className="filter-search"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                border: searchTerm ? "1px solid #00236F" : "1px solid var(--Foundation-neutral-neutral-100, #D4D5D8)",
+                borderRadius: 12,
+                padding: "8px 12px",
+                height: 40,
+                gap: 8,
+                background: "transparent",
+                width: 362,
+                boxSizing: "border-box",
+              }}
+            >
+              <img src={filterIcon} alt="filter" width={18} height={18} />
+              <input
+                type="text"
+                placeholder="Filter by name, start date,..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  flex: 1,
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  color: "#141414",
+                }}
+              />
+              <img src={starsIcon} alt="stars" width={18} height={18} style={{ cursor: "pointer" }} onClick={() => setIsAISearchOpen(true)} />
+            </div>
+          )}
 
-          <div className="filter-buttons" style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div className="filter-buttons" style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {/* Rank */}
             <div style={{ position: "relative" }}>
-              <button style={filterBtnStyle} onClick={() => setActiveFilter(activeFilter === 'rank' ? null : 'rank')}>
-                Rank <ChevronDown size={14} color="#4B5563" />
+              <button
+                style={getFilterBtnStyle('rank', !!selectedRank)}
+                onClick={() => setActiveFilter(activeFilter === 'rank' ? null : 'rank')}
+                onMouseEnter={() => setHoveredFilter('rank')}
+                onMouseLeave={() => setHoveredFilter(null)}
+              >
+                Rank
+                {selectedRank ? (
+                  <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>1</div>
+                ) : activeFilter === 'rank' ? (
+                  <ChevronUp size={14} color="#4B5563" />
+                ) : (
+                  <ChevronDown size={14} color="#4B5563" />
+                )}
               </button>
               {activeFilter === 'rank' && (
                 <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 10, marginTop: 4 }}>
-                  <Rank onClose={() => setActiveFilter(null)} />
+                  <Rank
+                    onClose={() => setActiveFilter(null)}
+                    onApply={(vals) => { setSelectedRank(vals); setActiveFilter(null); }}
+                    onClear={() => { setSelectedRank(null); setActiveFilter(null); }}
+                  />
                 </div>
               )}
             </div>
+
             {/* Status */}
             <div style={{ position: "relative" }}>
-              <button style={filterBtnStyle} onClick={() => setActiveFilter(activeFilter === 'status_filter' ? null : 'status_filter')}>
-                Status <ChevronDown size={14} color="#4B5563" />
+              <button
+                style={getFilterBtnStyle('status_filter', !!selectedStatus && selectedStatus.length > 0)}
+                onClick={() => setActiveFilter(activeFilter === 'status_filter' ? null : 'status_filter')}
+                onMouseEnter={() => setHoveredFilter('status_filter')}
+                onMouseLeave={() => setHoveredFilter(null)}
+              >
+                Status
+                {selectedStatus && selectedStatus.length > 0 ? (
+                  <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>{selectedStatus.length}</div>
+                ) : activeFilter === 'status_filter' ? (
+                  <ChevronUp size={14} color="#4B5563" />
+                ) : (
+                  <ChevronDown size={14} color="#4B5563" />
+                )}
               </button>
               {activeFilter === 'status_filter' && (
                 <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 10, marginTop: 4 }}>
-                  <StatusFilter onClose={() => setActiveFilter(null)} />
+                  <StatusFilter
+                    onClose={() => setActiveFilter(null)}
+                    onApply={(vals) => { setSelectedStatus(vals); setActiveFilter(null); }}
+                    onClear={() => { setSelectedStatus([]); setActiveFilter(null); }}
+                    initialSelected={selectedStatus ?? []}
+                  />
                 </div>
               )}
             </div>
+
             {/* Leads */}
             <div style={{ position: "relative" }}>
-              <button style={filterBtnStyle} onClick={() => setActiveFilter(activeFilter === 'leads' ? null : 'leads')}>
-                Leads <ChevronDown size={14} color="#4B5563" />
+              <button
+                style={getFilterBtnStyle('leads', !!selectedLeads)}
+                onClick={() => setActiveFilter(activeFilter === 'leads' ? null : 'leads')}
+                onMouseEnter={() => setHoveredFilter('leads')}
+                onMouseLeave={() => setHoveredFilter(null)}
+              >
+                Leads
+                {selectedLeads ? (
+                  <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>1</div>
+                ) : activeFilter === 'leads' ? (
+                  <ChevronUp size={14} color="#4B5563" />
+                ) : (
+                  <ChevronDown size={14} color="#4B5563" />
+                )}
               </button>
               {activeFilter === 'leads' && (
                 <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 10, marginTop: 4 }}>
-                  <LeadsFilter onClose={() => setActiveFilter(null)} />
+                  <LeadsFilter
+                    onClose={() => setActiveFilter(null)}
+                    onApply={(vals) => { setSelectedLeads(vals); setActiveFilter(null); }}
+                    onClear={() => { setSelectedLeads(null); setActiveFilter(null); }}
+                  />
                 </div>
               )}
             </div>
+
             {/* Lead's status */}
             <div style={{ position: "relative" }}>
-              <button style={filterBtnStyle} onClick={() => setActiveFilter(activeFilter === 'leads_status' ? null : 'leads_status')}>
-                Lead's status <ChevronDown size={14} color="#4B5563" />
+              <button
+                style={getFilterBtnStyle('leads_status', selectedLeadsStatus.length > 0)}
+                onClick={() => setActiveFilter(activeFilter === 'leads_status' ? null : 'leads_status')}
+                onMouseEnter={() => setHoveredFilter('leads_status')}
+                onMouseLeave={() => setHoveredFilter(null)}
+              >
+                Lead's status
+                {selectedLeadsStatus.length > 0 ? (
+                  <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>{selectedLeadsStatus.length}</div>
+                ) : activeFilter === 'leads_status' ? (
+                  <ChevronUp size={14} color="#4B5563" />
+                ) : (
+                  <ChevronDown size={14} color="#4B5563" />
+                )}
               </button>
               {activeFilter === 'leads_status' && (
                 <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 10, marginTop: 4 }}>
-                  <Leads_status onClose={() => setActiveFilter(null)} />
+                  <Leads_status
+                    onClose={() => setActiveFilter(null)}
+                    onApply={(vals) => { setSelectedLeadsStatus(vals); setActiveFilter(null); }}
+                    onClear={() => { setSelectedLeadsStatus([]); setActiveFilter(null); }}
+                  />
                 </div>
               )}
             </div>
+
             {/* Deals */}
             <div style={{ position: "relative" }}>
-              <button style={filterBtnStyle} onClick={() => setActiveFilter(activeFilter === 'deals' ? null : 'deals')}>
-                Deals <ChevronDown size={14} color="#4B5563" />
+              <button
+                style={getFilterBtnStyle('deals', !!selectedDealsFilter)}
+                onClick={() => setActiveFilter(activeFilter === 'deals' ? null : 'deals')}
+                onMouseEnter={() => setHoveredFilter('deals')}
+                onMouseLeave={() => setHoveredFilter(null)}
+              >
+                Deals
+                {selectedDealsFilter ? (
+                  <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>1</div>
+                ) : activeFilter === 'deals' ? (
+                  <ChevronUp size={14} color="#4B5563" />
+                ) : (
+                  <ChevronDown size={14} color="#4B5563" />
+                )}
               </button>
               {activeFilter === 'deals' && (
                 <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 10, marginTop: 4 }}>
-                  <Deals onClose={() => setActiveFilter(null)} />
+                  <Deals
+                    onClose={() => setActiveFilter(null)}
+                    onApply={(vals: any) => { setSelectedDealsFilter(vals); setActiveFilter(null); }}
+                    onClear={() => { setSelectedDealsFilter(null); setActiveFilter(null); }}
+                  />
                 </div>
               )}
             </div>
+
             {/* Target */}
             <div style={{ position: "relative" }}>
-              <button style={filterBtnStyle} onClick={() => setActiveFilter(activeFilter === 'target' ? null : 'target')}>
-                Target <ChevronDown size={14} color="#4B5563" />
+              <button
+                style={getFilterBtnStyle('target', !!selectedTarget)}
+                onClick={() => setActiveFilter(activeFilter === 'target' ? null : 'target')}
+                onMouseEnter={() => setHoveredFilter('target')}
+                onMouseLeave={() => setHoveredFilter(null)}
+              >
+                Target
+                {selectedTarget ? (
+                  <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>1</div>
+                ) : activeFilter === 'target' ? (
+                  <ChevronUp size={14} color="#4B5563" />
+                ) : (
+                  <ChevronDown size={14} color="#4B5563" />
+                )}
               </button>
               {activeFilter === 'target' && (
                 <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 10, marginTop: 4 }}>
-                  <Target onClose={() => setActiveFilter(null)} />
+                  <Target
+                    onClose={() => setActiveFilter(null)}
+                    onApply={(vals: any) => { setSelectedTarget(vals); setActiveFilter(null); }}
+                    onClear={() => { setSelectedTarget(null); setActiveFilter(null); }}
+                  />
                 </div>
               )}
             </div>
+
+            {/* Reset Filters */}
+            <button
+              onClick={() => {
+                setSelectedRank(null);
+                setSelectedStatus([]);
+                setSelectedLeads(null);
+                setSelectedLeadsStatus([]);
+                setSelectedDealsFilter(null);
+                setSelectedTarget(null);
+                setSearchTerm("");
+                setActiveFilter(null);
+              }}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--Foundation-brand-brand-500, #00236F)",
+                fontFamily: "Inter",
+                fontSize: 14,
+                fontWeight: 400,
+                padding: 0,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Reset Filters
+            </button>
           </div>
         </div>
 
@@ -546,11 +738,13 @@ const Sales: React.FC = () => {
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setActiveFilter(activeFilter === 'sort' ? null : 'sort')}
+              onMouseEnter={() => setHoveredFilter('sort')}
+              onMouseLeave={() => setHoveredFilter(null)}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
                 border: "1px solid rgba(212, 213, 216, 1)", borderRadius: 12,
                 padding: "0 12px", height: 40, gap: 6,
-                background: activeFilter === 'sort' ? "rgba(0, 35, 111, 0.06)" : "transparent",
+                background: (hoveredFilter === 'sort' || activeFilter === 'sort') ? "#E6E9F1" : "transparent",
                 cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14,
                 color: "#4B5563", boxSizing: "border-box",
               }}

@@ -1,6 +1,7 @@
-import { ArrowDownUp, ChevronDown, Plus } from 'lucide-react'
+import { ArrowDownUp, ChevronDown, ChevronUp } from 'lucide-react'
 import filterIcon from '../assets/filter.svg';
-import { useState } from 'react';
+import starsIcon from '../assets/stars.svg';
+import { useState, useEffect } from 'react';
 import '../styles/tables-mobile.css';
 import mailIcon from '../assets/message-text-02 (1).svg';
 import Pagination from '../components/Pagination';
@@ -8,11 +9,101 @@ import Top_Periority_notes from '../components/Reports/Top_Periority_notes';
 import DateFilter from '../components/Filteration/Date';
 import Value from '../components/Filteration/Value';
 import { Sort } from '../components/Filteration/Sort';
+import { useGetReportsQuery, Report } from '../app/service/crudreports';
+
+
+
+const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      zIndex: 10000,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}
+    onClick={onClose}
+  >
+    <div onClick={(e) => e.stopPropagation()}>{children}</div>
+  </div>
+);
 
 const Reports = () => {
-    const [activeFilter, setActiveFilter] = useState<string | null>(null);
+    const [activeFilter, setActiveFilter] = useState<'date' | 'value' | 'sort' | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+    const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+
+    // Search state
+    const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    // AI Search
+    const [isAISearchOpen, setIsAISearchOpen] = useState(false);
+    const [aiQuery, setAiQuery] = useState("");
+
+    // Hover state for filter buttons
+    const [hoveredFilter, setHoveredFilter] = useState<'date' | 'value' | 'sort' | null>(null);
+
+    // Filters state – single dateFilter object like Leads
+    const [dateFilter, setDateFilter] = useState<{ preset?: any; startDate?: string; endDate?: string } | null>(null);
+    const [valueRange, setValueRange] = useState<{ from?: string; to?: string }>({});
+    const [sortOption, setSortOption] = useState<string>("newest");
+
+    // Derive dateRange from dateFilter
+    const dateRange = {
+        startDate: dateFilter?.startDate,
+        endDate: dateFilter?.endDate,
+    };
+
+    // Search Debouncing
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+            setCurrentPage(1);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [searchTerm]);
+
+    const queryParams = {
+        page: currentPage,
+        limit: 10,
+        search: debouncedSearch || undefined,
+        start_date: dateFilter?.startDate || undefined,
+        end_date: dateFilter?.endDate || undefined,
+        min_revenue: valueRange.from || undefined,
+        max_revenue: valueRange.to || undefined,
+    };
+
+    const { data, isLoading } = useGetReportsQuery(queryParams);
+    const reportsList = data?.data || [];
+    const totalPages = data?.pagination?.totalPages || 1;
+
+    // Local sorting to ensure robust ordering
+    const sortedReports = [...reportsList].sort((a, b) => {
+        if (sortOption === "newest") {
+            return new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime();
+        }
+        if (sortOption === "oldest") {
+            return new Date(a.created_at || a.date).getTime() - new Date(b.created_at || b.date).getTime();
+        }
+        if (sortOption === "a-z") {
+            const nameA = a.sales ? `${a.sales.first_name} ${a.sales.last_name}`.toLowerCase() : "";
+            const nameB = b.sales ? `${b.sales.first_name} ${b.sales.last_name}`.toLowerCase() : "";
+            return nameA.localeCompare(nameB);
+        }
+        if (sortOption === "z-a") {
+            const nameA = a.sales ? `${a.sales.first_name} ${a.sales.last_name}`.toLowerCase() : "";
+            const nameB = b.sales ? `${b.sales.first_name} ${b.sales.last_name}`.toLowerCase() : "";
+            return nameB.localeCompare(nameA);
+        }
+        return 0;
+    });
+
   return (
     <div style={{ width: "100%", paddingBottom: 24, paddingTop: 8 }}>
       {/* ── Header ── */}
@@ -33,7 +124,7 @@ const Reports = () => {
             fontSize: 33,
             lineHeight: "100%",
             color: "rgba(0, 35, 111, 1)",
-            width: 98,
+            width: 140,
             height: 40,
             display: "flex",
             alignItems: "center",
@@ -66,6 +157,7 @@ const Reports = () => {
           Export Report
         </button>
       </div>
+
       {/* ── Filter Bar ── */}
       <div
         className="filter-bar"
@@ -75,10 +167,7 @@ const Reports = () => {
           height: 64,
           background: "rgba(237, 239, 242, 1)",
           borderRadius: 12,
-          paddingTop: 12,
-          paddingRight: 16,
-          paddingBottom: 12,
-          paddingLeft: 16,
+          padding: "12px 16px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -86,58 +175,129 @@ const Reports = () => {
         }}
       >
         {/* Left group */}
-        <div className="filter-bar-left" style={{ display: "flex", alignItems: "center", width: 644 }}>
-          {/* Filter input */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              border: "1px solid rgba(212, 213, 216, 1)",
-              borderRadius: 12,
-              paddingTop: 8,
-              paddingRight: 12,
-              paddingBottom: 8,
-              paddingLeft: 12,
-              height: 40,
-              width: 406,
-              gap: 8,
-              background: "transparent",
-              flexShrink: 0,
-              boxSizing: "border-box",
-              marginRight: 20,
-            }}
-          >
-            <img src={filterIcon} alt="filter" width={24} height={24} />
-            <input
-              type="text"
-              placeholder="Filter by date, name,..."
-              style={{
-                border: "none",
-                background: "transparent",
-                outline: "none",
-                flex: 1,
-                fontFamily: "Inter, sans-serif",
-                fontSize: 14,
-                color: "#141414",
-              }}
-            />       
-          </div>
-
-          {/* Date dropdown */}
-          <div style={{ position: "relative", marginRight: 12 }}>
-            <button
-              onClick={() => setActiveFilter(activeFilter === "date" ? null : "date")}
+        <div className="filter-bar-left" style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          {/* Search / AI Search input */}
+          {isAISearchOpen ? (
+            <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
                 border: "1px solid rgba(212, 213, 216, 1)",
+                borderRadius: 12,
+                padding: "8px 12px",
+                height: 40,
+                gap: 8,
+                background: "#EDEFF2",
+                width: 406,
+                boxSizing: "border-box",
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Describe what you want..."
+                value={aiQuery}
+                onChange={(e) => setAiQuery(e.target.value)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  flex: 1,
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 16,
+                  fontWeight: 400,
+                  color: "var(--Foundation-neutral-neutral-800, #464646)",
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--Foundation-neutral-neutral-800, #464646)",
+                  whiteSpace: "nowrap",
+                  marginRight: 4,
+                  userSelect: "none",
+                }}
+              >
+                (0/5) AI limit
+              </span>
+              <svg
+                onClick={() => setIsAISearchOpen(false)}
+                xmlns="http://www.w3.org/2000/svg"
+                width="19.2"
+                height="19.2"
+                viewBox="0 0 20 20"
+                fill="none"
+                style={{ cursor: "pointer", flexShrink: 0 }}
+              >
+                <path d="M12.4235 0L14.2538 4.94621L19.2 6.77647L14.2538 8.60673L12.4235 13.5529L10.5933 8.60673L5.64706 6.77647L10.5933 4.94621L12.4235 0Z" fill="var(--Foundation-brand-brand-500, #00236F)"/>
+                <path d="M3.95294 11.2941L5.55177 13.6482L7.90588 15.2471L5.55177 16.8459L3.95294 19.2L2.35411 16.8459L0 15.2471L2.35411 13.6482L3.95294 11.2941Z" fill="var(--Foundation-brand-brand-500, #00236F)"/>
+              </svg>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                border: searchTerm ? "1px solid var(--Foundation-brand-brand-500, #00236F)" : "1px solid rgba(212, 213, 216, 1)",
+                borderRadius: 12,
+                padding: "8px 12px",
+                height: 40,
+                gap: 8,
+                background: "transparent",
+                width: 406,
+                boxSizing: "border-box",
+              }}
+            >
+              <img src={filterIcon} alt="filter" width={24} height={24} />
+              <input
+                type="text"
+                placeholder="Filter by date, name,..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  flex: 1,
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 14,
+                  color: "#141414",
+                }}
+              />
+              <img
+                src={starsIcon}
+                alt="stars"
+                width={24}
+                height={24}
+                style={{ cursor: "pointer" }}
+                onClick={() => setIsAISearchOpen(true)}
+              />
+            </div>
+          )}
+
+          {/* Date */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setActiveFilter(activeFilter === "date" ? null : "date")}
+              onMouseEnter={() => setHoveredFilter('date')}
+              onMouseLeave={() => setHoveredFilter(null)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid #D4D5D8",
                 borderRadius: 12,
                 padding: "0 12px",
                 height: 40,
                 width: 88,
                 gap: 8,
-                background: "transparent",
+                background: (hoveredFilter === 'date' || dateFilter || activeFilter === "date") ? "#E6E9F1" : "transparent",
                 cursor: "pointer",
                 fontFamily: "Inter, sans-serif",
                 fontSize: 14,
@@ -146,40 +306,70 @@ const Reports = () => {
                 flexShrink: 0,
               }}
             >
-              <span style={{
-                fontFamily: "Inter, sans-serif",
-                fontWeight: 400,
-                fontSize: 16,
-                lineHeight: "100%",
-                color: "rgba(70, 70, 70, 1)",
-                verticalAlign: "middle"
-              }}>
-                Date
-              </span>
-              <ChevronDown size={16} color="#4B5563" />
+              Date
+              {dateFilter ? (
+                <div style={{
+                  background: "#B0BBD2",
+                  width: 20,
+                  height: 22,
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 2,
+                  boxSizing: "border-box",
+                  fontSize: 11,
+                  color: "#141414",
+                  fontWeight: 600,
+                }}>
+                  1
+                </div>
+              ) : activeFilter === "date" ? (
+                <ChevronUp size={16} color="#4B5563" />
+              ) : (
+                <ChevronDown size={16} color="#4B5563" />
+              )}
             </button>
             {activeFilter === "date" && (
               <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 50 }}>
-                <DateFilter onApply={(date) => { console.log(date); setActiveFilter(null); }} />
+                <DateFilter
+                  onClose={() => setActiveFilter(null)}
+                  onApply={(data) => {
+                    setDateFilter(data);
+                    setActiveFilter(null);
+                    setCurrentPage(1);
+                  }}
+                  onClear={() => {
+                    setDateFilter(null);
+                    setActiveFilter(null);
+                    setCurrentPage(1);
+                  }}
+                  initialPreset={dateFilter?.preset}
+                  initialStartDate={dateFilter?.startDate}
+                  initialEndDate={dateFilter?.endDate}
+                  dateCounts={data?.dateCounts}
+                />
               </div>
             )}
           </div>
 
-          {/* Value dropdown */}
+          {/* Value */}
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setActiveFilter(activeFilter === "value" ? null : "value")}
+              onMouseEnter={() => setHoveredFilter('value')}
+              onMouseLeave={() => setHoveredFilter(null)}
               style={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
-                border: "1px solid rgba(212, 213, 216, 1)",
+                justifyContent: "center",
+                border: "1px solid #D4D5D8",
                 borderRadius: 12,
                 padding: "0 12px",
                 height: 40,
-                width: 139,
+                minWidth: 120,
                 gap: 8,
-                background: "transparent",
+                background: (hoveredFilter === 'value' || (valueRange.from || valueRange.to) || activeFilter === "value") ? "#E6E9F1" : "transparent",
                 cursor: "pointer",
                 fontFamily: "Inter, sans-serif",
                 fontSize: 14,
@@ -188,72 +378,123 @@ const Reports = () => {
                 flexShrink: 0,
               }}
             >
-              <span style={{
-                fontFamily: "Inter, sans-serif",
-                fontWeight: 400,
-                fontSize: 16,
-                lineHeight: "100%",
-                color: "rgba(70, 70, 70, 1)",
-                verticalAlign: "middle"
-              }}>
-                Deals value
-              </span>
-              <ChevronDown size={16} color="#4B5563" />
+              Deals value
+              {(valueRange.from || valueRange.to) ? (
+                <div style={{
+                  background: "#B0BBD2",
+                  width: 20,
+                  height: 22,
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 2,
+                  boxSizing: "border-box",
+                  fontSize: 11,
+                  color: "#141414",
+                  fontWeight: 600,
+                }}>
+                  1
+                </div>
+              ) : activeFilter === "value" ? (
+                <ChevronUp size={16} color="#4B5563" />
+              ) : (
+                <ChevronDown size={16} color="#4B5563" />
+              )}
             </button>
             {activeFilter === "value" && (
               <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 50 }}>
-                <Value onApply={(val) => { console.log(val); setActiveFilter(null); }} onClear={() => setActiveFilter(null)} />
+                <Value
+                  onClose={() => setActiveFilter(null)}
+                  onApply={(val) => {
+                    setValueRange({ from: val.from, to: val.to });
+                    setActiveFilter(null);
+                    setCurrentPage(1);
+                  }}
+                  onClear={() => {
+                    setValueRange({});
+                    setActiveFilter(null);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Reset Filters */}
+          <button
+            onClick={() => {
+              setDateFilter(null);
+              setValueRange({});
+              setSearchTerm("");
+              setCurrentPage(1);
+              setActiveFilter(null);
+            }}
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--Foundation-brand-brand-500, #00236F)",
+              fontFamily: "Inter",
+              fontSize: 16,
+              fontStyle: "normal",
+              fontWeight: 400,
+              lineHeight: "normal",
+              padding: 0,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Reset Filters
+          </button>
+        </div>
+
+        {/* Sort by dropdown */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div className="filter-bar-right" style={{ position: "relative" }}>
+            <button
+              onClick={() => setActiveFilter(activeFilter === "sort" ? null : "sort")}
+              onMouseEnter={() => setHoveredFilter('sort')}
+              onMouseLeave={() => setHoveredFilter(null)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid rgba(212, 213, 216, 1)",
+                borderRadius: 12,
+                paddingRight: 12,
+                paddingLeft: 12,
+                height: 40,
+                width: 108,
+                gap: 8,
+                background: hoveredFilter === 'sort' ? "#E6E9F1" : "transparent",
+                cursor: "pointer",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 14,
+                color: "#4B5563",
+                boxSizing: "border-box",
+              }}
+            >
+              Sort by
+              <ArrowDownUp size={16} color="#4B5563" />
+            </button>
+            {activeFilter === "sort" && (
+              <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, zIndex: 50 }}>
+                <Sort 
+                  isOpen={true} 
+                  onClose={() => setActiveFilter(null)} 
+                  defaultValue={sortOption}
+                  onApply={(sortData) => {
+                    setSortOption(sortData);
+                    setActiveFilter(null);
+                    setCurrentPage(1);
+                  }} 
+                />
               </div>
             )}
           </div>
         </div>
-
-        {/* Sort by dropdown */}
-        <div className="filter-bar-right" style={{ position: "relative" }}>
-          <button
-            onClick={() => setActiveFilter(activeFilter === "sort" ? null : "sort")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              border: "1px solid rgba(212, 213, 216, 1)",
-              borderRadius: 12,
-              paddingRight: 12,
-              paddingLeft: 12,
-              height: 40,
-              width: 108,
-              gap: 8,
-              background: "transparent",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-              fontSize: 14,
-              color: "#4B5563",
-              boxSizing: "border-box",
-            }}
-          >
-            <span style={{
-              fontFamily: "Inter, sans-serif",
-              fontWeight: 400,
-              fontSize: 16,
-              lineHeight: "100%",
-              color: "rgba(70, 70, 70, 1)",
-              verticalAlign: "middle"
-            }}>
-              Sort by
-            </span>
-            <ArrowDownUp size={16} color="#4B5563" />
-          </button>
-          {activeFilter === "sort" && (
-            <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, zIndex: 50 }}>
-              <Sort 
-                isOpen={true} 
-                onClose={() => setActiveFilter(null)} 
-                onApply={(sortData) => { console.log(sortData); setActiveFilter(null); }} 
-              />
-            </div>
-          )}
-        </div>
       </div>
+
       {/* ── Table ── */}
       <div
         className="responsive-table-container"
@@ -316,132 +557,133 @@ const Reports = () => {
 
         {/* Table Body */}
         <div style={{ width: "100%", background: "#fff" }}>
-          {[
-            { date: "04/11/2026", calls: 44, contacts: 24, followups: 24, meetings: 6, deals: 3, dealsValue: "250,000" },
-            { date: "04/11/2026", calls: 44, contacts: 24, followups: 24, meetings: 6, deals: 3, dealsValue: "250,000" },
-            { date: "04/11/2026", calls: 44, contacts: 24, followups: 24, meetings: 6, deals: 3, dealsValue: "250,000" },
-            { date: "04/11/2026", calls: 44, contacts: 24, followups: 24, meetings: 6, deals: 3, dealsValue: "250,000" },
-            { date: "04/11/2026", calls: 44, contacts: 24, followups: 24, meetings: 6, deals: 3, dealsValue: "250,000" },
-            { date: "04/11/2026", calls: 44, contacts: 24, followups: 24, meetings: 6, deals: 3, dealsValue: "250,000" },
-            { date: "04/11/2026", calls: 44, contacts: 24, followups: 24, meetings: 6, deals: 3, dealsValue: "250,000" },
-            { date: "04/11/2026", calls: 44, contacts: 24, followups: 24, meetings: 6, deals: 3, dealsValue: "250,000" },
-            { date: "04/11/2026", calls: 44, contacts: 24, followups: 24, meetings: 6, deals: 3, dealsValue: "250,000" },
-            { date: "04/11/2026", calls: 44, contacts: 24, followups: 24, meetings: 6, deals: 3, dealsValue: "250,000" },
-          ].map((report, i, arr) => (
-            <div
-              key={i}
-              className="responsive-table-row"
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "16px 12px",
-                boxSizing: "border-box",
-                height: 72,
-                borderBottom: i < arr.length - 1 ? "1px solid rgba(237, 239, 242, 1)" : "none",
-              }}
-            >
-              {/* Date */}
-              <div style={{ width: 70, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
-                {report.date}
-              </div>
-
-              {/* Created by */}
-              <div
-                style={{
-                  width: 146,
-                  flexShrink: 0,
-                  fontFamily: "Inter, sans-serif",
-                  fontWeight: 400,
-                  fontSize: 13,
-                  lineHeight: "140%",
-                  color: "var(--Foundation-neutral-neutral-800, #464646)",
-                }}
-              >
-                Yasser Abdelhameed
-              </div>
-
-              {/* Role */}
-              <div
-                style={{
-                  width: 100,
-                  flexShrink: 0,
-                  fontFamily: "Inter, sans-serif",
-                  fontWeight: 400,
-                  fontSize: 13,
-                  lineHeight: "140%",
-                  color: "var(--Foundation-neutral-neutral-800, #464646)",
-                }}
-              >
-                Sales Manager
-              </div>
-
-              {/* Calls */}
-              <div style={{ width: 41, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
-                66666
-              </div>
-
-              {/* Contacts */}
-              <div style={{ width: 59, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
-                888
-              </div>
-
-              {/* Followups */}
-              <div style={{ width: 65, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
-                444
-              </div>
-
-              {/* Meetings */}
-              <div style={{ width: 60, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
-                888
-              </div>
-
-              {/* Deals */}
-              <div style={{ width: 41, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
-                888
-              </div>
-
-              {/* Deals Value */}
-              <div style={{ width: 96, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
-                120,000,000
-              </div>
-
-              {/* Top Priority & notes */}
-              <div style={{ width: 125, flexShrink: 0, display: "flex", alignItems: "center" }}>
-                <img src={mailIcon} alt="Email" width={24} height={24} style={{ cursor: "pointer" }} onClick={() => setIsNotesModalOpen(true)} />
-              </div>
+          {isLoading ? (
+            <div style={{ padding: 24, textAlign: "center", color: "#6B7280", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
+              Loading reports...
             </div>
-          ))}
+          ) : sortedReports.length === 0 ? (
+            <div style={{ padding: 24, textAlign: "center", color: "#6B7280", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
+              No reports found.
+            </div>
+          ) : (
+            sortedReports.map((report, i, arr) => {
+              const formattedDate = report.date
+                ? new Date(report.date).toLocaleDateString("en-GB")
+                : report.created_at
+                ? new Date(report.created_at).toLocaleDateString("en-GB")
+                : "--";
+              const authorName = report.sales
+                ? `${report.sales.first_name} ${report.sales.last_name}`
+                : "System";
+
+              return (
+                <div
+                  key={report.id}
+                  className="responsive-table-row"
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "16px 12px",
+                    boxSizing: "border-box",
+                    height: 72,
+                    borderBottom: i < arr.length - 1 ? "1px solid rgba(237, 239, 242, 1)" : "none",
+                  }}
+                >
+                  {/* Date */}
+                  <div style={{ width: 70, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                    {formattedDate}
+                  </div>
+
+                  {/* Created by */}
+                  <div
+                    style={{
+                      width: 146,
+                      flexShrink: 0,
+                      fontFamily: "Inter, sans-serif",
+                      fontWeight: 400,
+                      fontSize: 13,
+                      lineHeight: "140%",
+                      color: "var(--Foundation-neutral-neutral-800, #464646)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {authorName}
+                  </div>
+
+                  {/* Role */}
+                  <div
+                    style={{
+                      width: 100,
+                      flexShrink: 0,
+                      fontFamily: "Inter, sans-serif",
+                      fontWeight: 400,
+                      fontSize: 13,
+                      lineHeight: "140%",
+                      color: "var(--Foundation-neutral-neutral-800, #464646)",
+                    }}
+                  >
+                    Sales Agent
+                  </div>
+
+                  {/* Calls */}
+                  <div style={{ width: 41, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                    {report.calls_today}
+                  </div>
+
+                  {/* Contacts */}
+                  <div style={{ width: 59, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                    {report.leads_contacted_today}
+                  </div>
+
+                  {/* Followups */}
+                  <div style={{ width: 65, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                    {report.follow_ups_today}
+                  </div>
+
+                  {/* Meetings */}
+                  <div style={{ width: 60, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                    {report.meetings_today}
+                  </div>
+
+                  {/* Deals */}
+                  <div style={{ width: 41, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                    {report.deals_closed_today}
+                  </div>
+
+                  {/* Deals Value */}
+                  <div style={{ width: 96, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                    {report.revenue_today ? report.revenue_today.toLocaleString() : "0"}
+                  </div>
+
+                  {/* Top Priority & notes */}
+                  <div style={{ width: 125, flexShrink: 0, display: "flex", alignItems: "center" }}>
+                    <img src={mailIcon} alt="Email" width={24} height={24} style={{ cursor: "pointer" }} onClick={() => setSelectedReport(report)} />
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
       {/* ── Pagination ── */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-        <Pagination currentPage={currentPage} totalPages={4} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       </div>
 
       {/* ── Modals ── */}
-      {isNotesModalOpen && (
-        <div
-          onClick={() => setIsNotesModalOpen(false)}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div onClick={(e) => e.stopPropagation()}>
-            <Top_Periority_notes onClose={() => setIsNotesModalOpen(false)} />
-          </div>
-        </div>
+      {selectedReport && (
+        <ModalOverlay onClose={() => setSelectedReport(null)}>
+          <Top_Periority_notes
+            onClose={() => setSelectedReport(null)}
+            priorityText={selectedReport.top_periority_tomorrow}
+            notesText={selectedReport.additional_notes}
+          />
+        </ModalOverlay>
       )}
     </div>
   )

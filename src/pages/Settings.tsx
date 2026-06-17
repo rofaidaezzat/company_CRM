@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronDown, Wrench, Briefcase, Target, Filter } from 'lucide-react';
+import { useTranslation } from '../context/LanguageContext';
 import Edit_Profile from '../components/Setting/Edit_Profile';
 import Change_password from '../components/Setting/Change_password';
 import Monthly from '../components/Setting/Monthly';
 import Distribution_Method from '../components/Setting/Distribution_Method';
 import Lead_Form_Question from '../components/Setting/Lead_Form_Question';
+import { useGetProfileDetailsQuery, useUpdateProfileInfoMutation } from '../app/service/crudsetting';
 import '../styles/settings-mobile.css';
 
 import companyLogo from '../assets/7a32fb9fa7972d76a87f5709de18f309ed2c16f1.png';
@@ -162,9 +164,17 @@ const InfoRow = ({ icon, text }: { icon: string; text: string }) => (
 );
 
 const Settings = () => {
-  const [taskReminder, setTaskReminder] = useState(true);
-  const [followupReminder, setFollowupReminder] = useState(true);
-  const [language, setLanguage] = useState<'English' | 'Arabic'>('English');
+  const { language: contextLanguage, changeLanguage } = useTranslation();
+  const language = contextLanguage === 'ar' ? 'Arabic' : 'English';
+
+  // ── API ──────────────────────────────────────────────────────────────────
+  const { data: profileResp, isLoading: profileLoading } = useGetProfileDetailsQuery();
+  const [updateProfile] = useUpdateProfileInfoMutation();
+  const profile = profileResp?.data?.profile;
+
+  // ── Local UI state ────────────────────────────────────────────────────────
+  const [taskReminder, setTaskReminder] = useState(false);
+  const [followupReminder, setFollowupReminder] = useState(false);
   const [targetPeriod, setTargetPeriod] = useState('Monthly');
   const [targetValue, setTargetValue] = useState('');
   const [distributionMethod, setDistributionMethod] = useState('Automatic distribution');
@@ -173,6 +183,32 @@ const Settings = () => {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
+
+  // Populate toggles from API
+  useEffect(() => {
+    if (profile) {
+      setTaskReminder(profile.task_reminder ?? false);
+      setFollowupReminder(profile.follow_up_reminder ?? false);
+    }
+  }, [profile]);
+
+  // Toggle handlers that also update the backend
+  const handleToggleTask = async () => {
+    const next = !taskReminder;
+    setTaskReminder(next);
+    try { await updateProfile({ task_reminder: next }).unwrap(); } catch {}
+  };
+  const handleToggleFollowup = async () => {
+    const next = !followupReminder;
+    setFollowupReminder(next);
+    try { await updateProfile({ follow_up_reminder: next }).unwrap(); } catch {}
+  };
+
+  // Profile display helpers
+  const fullName = profile ? `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim() : 'Loading...';
+  const initials = profile
+    ? `${(profile.first_name ?? '').charAt(0)}${(profile.last_name ?? '').charAt(0)}`.toUpperCase()
+    : '?';
 
   const periodRef = useRef<HTMLDivElement>(null);
   const distributionRef = useRef<HTMLDivElement>(null);
@@ -243,6 +279,7 @@ const Settings = () => {
             }}
           >
             <div className="settings-profile-body" style={{ display: 'flex', gap: 24, alignItems: 'stretch', height: '100%' }}>
+                {/* Profile left: avatar + info */}
               <div
                 className="settings-profile-left"
                 style={{
@@ -255,20 +292,29 @@ const Settings = () => {
                   alignItems: 'flex-start',
                 }}
               >
-                <img
-                  src={companyLogo}
-                  alt="Company logo"
-                  style={{
-                    width: 136,
-                    height: 136,
-                    borderRadius: 99,
-                    objectFit: 'cover',
-                    flexShrink: 0,
-                  }}
-                />
+                {/* Avatar */}
+                {profile?.avatar ? (
+                  <img
+                    src={profile.avatar}
+                    alt="Avatar"
+                    style={{ width: 136, height: 136, borderRadius: 99, objectFit: 'cover', flexShrink: 0 }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 136, height: 136, borderRadius: 99,
+                      background: '#8FA0C0', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontFamily: 'Inter, sans-serif',
+                      fontWeight: 700, fontSize: 40,
+                    }}
+                  >
+                    {profileLoading ? '…' : initials}
+                  </div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minWidth: 0 }}>
                   <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 16, fontWeight: 600, color: '#141414' }}>
-                    Company Name
+                    {fullName}
                   </span>
                   <div
                     style={{
@@ -282,20 +328,22 @@ const Settings = () => {
                       color: '#4B5563',
                     }}
                   >
-                    Real Estate
+                    {profile?.role?.name ?? 'Sales'}
                   </div>
                   <div
                     className="settings-profile-contact-grid"
                     style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 32px', alignContent: 'start' }}
                   >
-                    <InfoRow icon={emailIcon} text="companyemail@email.com" />
-                    <InfoRow icon={phoneIcon} text="01122334455" />
+                    <InfoRow icon={emailIcon} text={profile?.email ?? '—'} />
+                    <InfoRow icon={phoneIcon} text={profile?.phone ?? '—'} />
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <img src={starsIcon} alt="" style={{ width: 16, height: 16 }} />
-                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#4B5563' }}>Yasser Mamdouh</span>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#4B5563' }}>
+                        Rank #{profile?.current_rank ?? '—'}
+                      </span>
                     </div>
-                    <InfoRow icon={userProfile01Icon} text="10-50 employee" />
-                    <InfoRow icon={locationIcon} text="eldawly st, Alexandria, Egypt" />
+                    <InfoRow icon={userProfile01Icon} text={`${profile?.monthly_sales ?? '—'} monthly sales`} />
+                    <InfoRow icon={locationIcon} text={[profile?.city, profile?.country].filter(Boolean).join(', ') || '—'} />
                   </div>
                 </div>
               </div>
@@ -374,7 +422,7 @@ const Settings = () => {
                       Receive Alerts when a scheduled task is approaching its deadline.
                     </span>
                   </div>
-                  <Toggle checked={taskReminder} onChange={() => setTaskReminder(!taskReminder)} />
+                <Toggle checked={taskReminder} onChange={handleToggleTask} />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 24 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '80%', paddingRight: 16 }}>
@@ -383,7 +431,7 @@ const Settings = () => {
                       Receive Alerts for neglected leads approaching their followup time.
                     </span>
                   </div>
-                  <Toggle checked={followupReminder} onChange={() => setFollowupReminder(!followupReminder)} />
+                  <Toggle checked={followupReminder} onChange={handleToggleFollowup} />
                 </div>
               </div>
 
@@ -411,7 +459,7 @@ const Settings = () => {
                 {(['English', 'Arabic'] as const).map((lang, idx) => (
                   <div
                     key={lang}
-                    onClick={() => setLanguage(lang)}
+                    onClick={() => changeLanguage(lang === 'Arabic' ? 'ar' : 'en')}
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',

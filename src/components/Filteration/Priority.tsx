@@ -1,20 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../../styles/filteration-mobile.css";
 
-const PRIORITY_OPTIONS = [
-  { label: "Low", count: 200 },
-  { label: "Medium", count: 200 },
-  { label: "High", count: 200 },
+const PRIORITY_OPTIONS: { label: string; apiKey: string }[] = [
+  { label: "Urgent", apiKey: "URGENT" },
+  { label: "High", apiKey: "HIGH" },
+  { label: "Medium", apiKey: "MEDIUM" },
+  { label: "Low", apiKey: "LOW" },
 ];
 
 interface PriorityProps {
   onApply?: (selected: string[]) => void;
   onClear?: () => void;
   onClose?: () => void;
+  initialSelected?: string[];
+  counts?: Record<string, number>;
 }
 
-const Priority: React.FC<PriorityProps> = ({ onApply, onClear, onClose }) => {
-  const [selected, setSelected] = useState<string[]>([]);
+const Priority: React.FC<PriorityProps> = ({ onApply, onClear, onClose, initialSelected, counts }) => {
+  const [selected, setSelected] = useState<string[]>(initialSelected || []);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,20 +50,25 @@ const Priority: React.FC<PriorityProps> = ({ onApply, onClear, onClose }) => {
     <div ref={containerRef} className="filter-modal" style={styles.container}>
       {/* Options list */}
       <div className="filter-list" style={styles.optionsList}>
-        {PRIORITY_OPTIONS.map((option) => (
-          <label key={option.label} className="filter-checkbox-row" style={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={selected.includes(option.label)}
-              onChange={() => toggleOption(option.label)}
-              style={styles.checkbox}
-            />
-            <span className="filter-text" style={styles.optionText}>
-              {option.label}
-              <span style={styles.count}> ({option.count})</span>
-            </span>
-          </label>
-        ))}
+        {PRIORITY_OPTIONS.map((option) => {
+          const count = counts?.[option.apiKey] ?? undefined;
+          return (
+            <label key={option.label} className="filter-checkbox-row" style={styles.checkboxRow}>
+              <input
+                type="checkbox"
+                checked={selected.includes(option.label)}
+                onChange={() => toggleOption(option.label)}
+                style={styles.checkbox}
+              />
+              <span className="filter-text" style={styles.optionText}>
+                {option.label}
+                {count !== undefined && (
+                  <span style={styles.count}> ({count})</span>
+                )}
+              </span>
+            </label>
+          );
+        })}
       </div>
 
       {/* Divider */}
@@ -98,7 +106,6 @@ const styles: Record<string, React.CSSProperties> = {
 
   optionsList: {
     width: "290px",
-    height: "128px",
     minWidth: "290px",
     display: "flex",
     flexDirection: "column",

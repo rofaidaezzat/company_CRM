@@ -28,8 +28,6 @@ const Layout: React.FC = () => {
         onNavigate={(page) => {
           if (page === "logout") {
             console.log("Logout clicked");
-          } else if (page === "overview") {
-            navigate("/");
           } else {
             navigate(`/${page}`);
           }
@@ -185,8 +183,6 @@ const Layout: React.FC = () => {
               setIsMobileMenuOpen(false);
               if (page === "logout") {
                 console.log("Logout clicked");
-              } else if (page === "overview") {
-                navigate("/");
               } else {
                 navigate(`/${page}`);
               }

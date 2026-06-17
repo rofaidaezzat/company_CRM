@@ -9,24 +9,35 @@ interface FollowUpProps {
     startDate: string;
     endDate: string;
   }) => void;
+  onClear?: () => void;
   defaultFilter?: string;
   defaultStartDate?: string;
   defaultEndDate?: string;
+  followUpCounts?: Record<string, number>;
 }
 
 const followUpOptions = [
-  { value: 'today', label: 'Today', count: 200 },
-  { value: 'tomorrow', label: 'Tomorrow', count: 200 },
-  { value: 'this-week', label: 'This week', count: 200 },
-  { value: 'next-week', label: 'Next week', count: 200 },
-  { value: 'no-followup', label: 'No followup', count: 200 },
-  { value: 'missed', label: 'Missed', count: 200 },
+  { value: 'today', label: 'Today', countKey: 'today' },
+  { value: 'tomorrow', label: 'Tomorrow', countKey: 'tomorrow' },
+  { value: 'this-week', label: 'This week', countKey: 'thisWeek' },
+  { value: 'next-week', label: 'Next week', countKey: 'nextWeek' },
+  { value: 'no-followup', label: 'No followup', countKey: 'noFollowup' },
+  { value: 'missed', label: 'Missed', countKey: 'missed' },
 ];
 
-export const FollowUp: React.FC<FollowUpProps> = ({ isOpen, onClose, onApply }) => {
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+export const FollowUp: React.FC<FollowUpProps> = ({
+  isOpen,
+  onClose,
+  onApply,
+  onClear,
+  defaultFilter,
+  defaultStartDate,
+  defaultEndDate,
+  followUpCounts,
+}) => {
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(defaultFilter || null);
+  const [startDate, setStartDate] = useState(defaultStartDate || "");
+  const [endDate, setEndDate] = useState(defaultEndDate || "");
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,6 +55,7 @@ export const FollowUp: React.FC<FollowUpProps> = ({ isOpen, onClose, onApply }) 
     setSelectedPreset(null);
     setStartDate("");
     setEndDate("");
+    onClear?.();
     onClose?.();
   };
 
@@ -117,6 +129,7 @@ export const FollowUp: React.FC<FollowUpProps> = ({ isOpen, onClose, onApply }) 
         >
           {followUpOptions.map((preset) => {
             const active = selectedPreset === preset.label;
+            const count = followUpCounts?.[preset.countKey];
             return (
               <div
                 key={preset.label}
@@ -182,16 +195,18 @@ export const FollowUp: React.FC<FollowUpProps> = ({ isOpen, onClose, onApply }) 
                 >
                   {preset.label}
                 </span>
-                <span
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: 13,
-                    color: "#6B7280",
-                    fontWeight: 400,
-                  }}
-                >
-                  ({preset.count})
-                </span>
+                {count !== undefined && (
+                  <span
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 13,
+                      color: "#6B7280",
+                      fontWeight: 400,
+                    }}
+                  >
+                    ({count})
+                  </span>
+                )}
               </div>
             );
           })}
@@ -401,3 +416,4 @@ export const FollowUp: React.FC<FollowUpProps> = ({ isOpen, onClose, onApply }) 
     </div>
   );
 };
+export default FollowUp;

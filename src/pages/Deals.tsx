@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, ChevronDown, ArrowDownUp } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, ArrowDownUp } from 'lucide-react';
+import starsIcon from '../assets/stars.svg';
 import '../styles/tables-mobile.css';
 import filterIcon from '../assets/filter.svg';
-import starsIcon from '../assets/stars.svg';
 import whatsappIcon from '../assets/ic_baseline-whatsapp.svg';
 import mailIcon from '../assets/message-text-02 (1).svg';
 import editPenIcon from '../assets/edit-04.svg';
@@ -16,19 +16,10 @@ import Value from '../components/Filteration/Value';
 import DateFilter from '../components/Filteration/Date';
 import { Sort } from '../components/Filteration/Sort';
 import Members_filter from '../components/Filteration_Manager/Members_filter';
+import { useGetDealsQuery, useUpdateDealMutation, Deal } from '../app/service/cruddeals';
+import { toast } from 'sonner';
 
-const INITIAL_DEALS = [
-  { date: "04/11/2026", name: "John Dorghamasadsad", company: "Elshayeeb inc.", phone: "+20112170891", city: "Alexandria", value: "120,000,000", createdBy: "Yasser Abdelhameed" },
-  { date: "04/11/2026", name: "John Dorghamasadsad", company: "Elshayeeb inc.", phone: "+20112170891", city: "Alexandria", value: "120,000,000", createdBy: "Ahmed Hassan" },
-  { date: "04/11/2026", name: "John Dorghamasadsad", company: "Elshayeeb inc.", phone: "+20112170891", city: "Alexandria", value: "120,000,000", createdBy: "Omar Khaled" },
-  { date: "04/11/2026", name: "John Dorghamasadsad", company: "Elshayeeb inc.", phone: "+20112170891", city: "Alexandria", value: "120,000,000", createdBy: "Mahmoud Abdelmawgoud" },
-  { date: "04/11/2026", name: "John Dorghamasadsad", company: "Elshayeeb inc.", phone: "+20112170891", city: "Alexandria", value: "120,000,000", createdBy: "Yasser Abdelhameed" },
-  { date: "04/11/2026", name: "John Dorghamasadsad", company: "Elshayeeb inc.", phone: "+20112170891", city: "Alexandria", value: "120,000,000", createdBy: "Yasser Abdelhameed" },
-  { date: "04/11/2026", name: "John Dorghamasadsad", company: "Elshayeeb inc.", phone: "+20112170891", city: "Alexandria", value: "120,000,000", createdBy: "Ahmed Hassan" },
-  { date: "04/11/2026", name: "John Dorghamasadsad", company: "Elshayeeb inc.", phone: "+20112170891", city: "Alexandria", value: "120,000,000", createdBy: "Omar Khaled" },
-  { date: "04/11/2026", name: "John Dorghamasadsad", company: "Elshayeeb inc.", phone: "+20112170891", city: "Alexandria", value: "120,000,000", createdBy: "Mahmoud Abdelmawgoud" },
-  { date: "04/11/2026", name: "John Dorghamasadsad", company: "Elshayeeb inc.", phone: "+20112170891", city: "Alexandria", value: "120,000,000", createdBy: "Yasser Abdelhameed" },
-];
+
 
 const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
   <div
@@ -44,7 +35,6 @@ const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClos
 );
 
 const Deals = () => {
-  const [deals, setDeals] = useState(INITIAL_DEALS);
   const [selectedCreatedByMember, setSelectedCreatedByMember] = useState("Created by");
   const [activeFilter, setActiveFilter] = useState<'date' | 'value' | 'sort' | 'created_by' | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,17 +42,85 @@ const Deals = () => {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isServiceDetailsOpen, setIsServiceDetailsOpen] = useState(false);
   const [isEditDealValueOpen, setIsEditDealValueOpen] = useState(false);
-  const [dealToDelete, setDealToDelete] = useState<{ index: number; name: string; date: string } | null>(null);
+  const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+
+  // Search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // AI Search
+  const [isAISearchOpen, setIsAISearchOpen] = useState(false);
+  const [aiQuery, setAiQuery] = useState("");
+
+  // Hover state for filter buttons
+  const [hoveredFilter, setHoveredFilter] = useState<'date' | 'value' | 'sort' | 'created_by' | null>(null);
+
+  // Filters state – use a single dateFilter object (like Leads)
+  const [dateFilter, setDateFilter] = useState<{ preset?: any; startDate?: string; endDate?: string } | null>(null);
+  const [valueRange, setValueRange] = useState<{ from?: string; to?: string }>({});
+  const [sortOption, setSortOption] = useState<string>("newest");
+
+  // Derive dateRange from dateFilter
+  const dateRange = {
+    startDate: dateFilter?.startDate,
+    endDate: dateFilter?.endDate,
+  };
+
+  // Mutations
+  const [updateDeal] = useUpdateDealMutation();
+
+  // Search Debouncing
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  const queryParams = {
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch || undefined,
+    start_date: dateFilter?.startDate || undefined,
+    end_date: dateFilter?.endDate || undefined,
+    min_revenue: valueRange.from || undefined,
+    max_revenue: valueRange.to || undefined,
+  };
+
+  const { data, isLoading } = useGetDealsQuery(queryParams);
+  const dealsList = data?.data || [];
+  const totalPages = data?.pagination?.totalPages || 1;
+
+  // Local sorting to avoid sending unsupported sort parameters to the backend
+  const sortedDeals = [...dealsList].sort((a, b) => {
+    if (sortOption === "newest") {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+    if (sortOption === "oldest") {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    }
+    if (sortOption === "a-z") {
+      const nameA = a.lead?.name || "";
+      const nameB = b.lead?.name || "";
+      return nameA.localeCompare(nameB);
+    }
+    if (sortOption === "z-a") {
+      const nameA = a.lead?.name || "";
+      const nameB = b.lead?.name || "";
+      return nameB.localeCompare(nameA);
+    }
+    return 0;
+  });
 
   const openDeleteModal = (
     e: React.MouseEvent,
-    index: number,
-    name: string,
-    date: string,
+    deal: Deal
   ) => {
     e.preventDefault();
     e.stopPropagation();
-    setDealToDelete({ index, name, date });
+    setDealToDelete(deal);
   };
 
   return (
@@ -152,10 +210,7 @@ const Deals = () => {
           height: 64,
           background: "rgba(237, 239, 242, 1)",
           borderRadius: 12,
-          paddingTop: 12,
-          paddingRight: 16,
-          paddingBottom: 12,
-          paddingLeft: 16,
+          padding: "12px 16px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -163,57 +218,129 @@ const Deals = () => {
         }}
       >
         {/* Left group */}
-        <div className="filter-bar-left" style={{ display: "flex", alignItems: "center", width: 644 }}>
-          {/* Filter input */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              border: "1px solid rgba(212, 213, 216, 1)",
-              borderRadius: 12,
-              paddingTop: 8,
-              paddingRight: 12,
-              paddingBottom: 8,
-              paddingLeft: 12,
-              height: 40,
-              width: 406,
-              gap: 8,
-              background: "transparent",
-              flexShrink: 0,
-              boxSizing: "border-box",
-              marginRight: 20,
-            }}
-          >
-            <img src={filterIcon} alt="filter" width={24} height={24} />
-            <input
-              type="text"
-              placeholder="Filter by date, name,..."
-              style={{
-                border: "none",
-                background: "transparent",
-                outline: "none",
-                flex: 1,
-                fontFamily: "Inter, sans-serif",
-                fontSize: 14,
-                color: "#141414",
-              }}
-            />
-
-          </div>
-
-          {/* Date dropdown */}
-          <div style={{ position: "relative", marginRight: 12 }}>
-            <button
-              onClick={() => setActiveFilter(activeFilter === 'date' ? null : 'date')}
+        <div className="filter-bar-left" style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          {/* Search / AI Search input */}
+          {isAISearchOpen ? (
+            <div
               style={{
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "space-between",
                 border: "1px solid rgba(212, 213, 216, 1)",
+                borderRadius: 12,
+                padding: "8px 12px",
+                height: 40,
+                gap: 8,
+                background: "#EDEFF2",
+                width: 406,
+                boxSizing: "border-box",
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Describe what you want..."
+                value={aiQuery}
+                onChange={(e) => setAiQuery(e.target.value)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  flex: 1,
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 16,
+                  fontWeight: 400,
+                  color: "var(--Foundation-neutral-neutral-800, #464646)",
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--Foundation-neutral-neutral-800, #464646)",
+                  whiteSpace: "nowrap",
+                  marginRight: 4,
+                  userSelect: "none",
+                }}
+              >
+                (0/5) AI limit
+              </span>
+              <svg
+                onClick={() => setIsAISearchOpen(false)}
+                xmlns="http://www.w3.org/2000/svg"
+                width="19.2"
+                height="19.2"
+                viewBox="0 0 20 20"
+                fill="none"
+                style={{ cursor: "pointer", flexShrink: 0 }}
+              >
+                <path d="M12.4235 0L14.2538 4.94621L19.2 6.77647L14.2538 8.60673L12.4235 13.5529L10.5933 8.60673L5.64706 6.77647L10.5933 4.94621L12.4235 0Z" fill="var(--Foundation-brand-brand-500, #00236F)"/>
+                <path d="M3.95294 11.2941L5.55177 13.6482L7.90588 15.2471L5.55177 16.8459L3.95294 19.2L2.35411 16.8459L0 15.2471L2.35411 13.6482L3.95294 11.2941Z" fill="var(--Foundation-brand-brand-500, #00236F)"/>
+              </svg>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                border: searchTerm ? "1px solid var(--Foundation-brand-brand-500, #00236F)" : "1px solid rgba(212, 213, 216, 1)",
+                borderRadius: 12,
+                padding: "8px 12px",
+                height: 40,
+                gap: 8,
+                background: "transparent",
+                width: 406,
+                boxSizing: "border-box",
+              }}
+            >
+              <img src={filterIcon} alt="filter" width={24} height={24} />
+              <input
+                type="text"
+                placeholder="Filter by date, name,..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  flex: 1,
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 14,
+                  color: "#141414",
+                }}
+              />
+              <img
+                src={starsIcon}
+                alt="stars"
+                width={24}
+                height={24}
+                style={{ cursor: "pointer" }}
+                onClick={() => setIsAISearchOpen(true)}
+              />
+            </div>
+          )}
+
+          {/* Date */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setActiveFilter(activeFilter === 'date' ? null : 'date')}
+              onMouseEnter={() => setHoveredFilter('date')}
+              onMouseLeave={() => setHoveredFilter(null)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid #D4D5D8",
                 borderRadius: 12,
                 padding: "0 12px",
                 height: 40,
+                width: 88,
                 gap: 8,
-                background: activeFilter === 'date' ? "rgba(0, 35, 111, 0.06)" : "transparent",
+                background: (hoveredFilter === 'date' || dateFilter || activeFilter === 'date') ? "#E6E9F1" : "transparent",
                 cursor: "pointer",
                 fontFamily: "Inter, sans-serif",
                 fontSize: 14,
@@ -223,28 +350,69 @@ const Deals = () => {
               }}
             >
               Date
-              <ChevronDown size={16} color="#4B5563" />
+              {dateFilter ? (
+                <div style={{
+                  background: "#B0BBD2",
+                  width: 20,
+                  height: 22,
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 2,
+                  boxSizing: "border-box",
+                  fontSize: 11,
+                  color: "#141414",
+                  fontWeight: 600,
+                }}>
+                  1
+                </div>
+              ) : activeFilter === 'date' ? (
+                <ChevronUp size={16} color="#4B5563" />
+              ) : (
+                <ChevronDown size={16} color="#4B5563" />
+              )}
             </button>
             {activeFilter === 'date' && (
               <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 500, marginTop: 4 }}>
-                <DateFilter onClose={() => setActiveFilter(null)} onApply={() => setActiveFilter(null)} />
+                <DateFilter
+                  onClose={() => setActiveFilter(null)}
+                  onApply={(data) => {
+                    setDateFilter(data);
+                    setCurrentPage(1);
+                    setActiveFilter(null);
+                  }}
+                  onClear={() => {
+                    setDateFilter(null);
+                    setCurrentPage(1);
+                    setActiveFilter(null);
+                  }}
+                  initialPreset={dateFilter?.preset}
+                  initialStartDate={dateFilter?.startDate}
+                  initialEndDate={dateFilter?.endDate}
+                  dateCounts={data?.dateCounts}
+                />
               </div>
             )}
           </div>
 
-          {/* Value dropdown */}
+          {/* Value */}
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setActiveFilter(activeFilter === 'value' ? null : 'value')}
+              onMouseEnter={() => setHoveredFilter('value')}
+              onMouseLeave={() => setHoveredFilter(null)}
               style={{
                 display: "flex",
                 alignItems: "center",
-                border: "1px solid rgba(212, 213, 216, 1)",
+                justifyContent: "center",
+                border: "1px solid #D4D5D8",
                 borderRadius: 12,
                 padding: "0 12px",
                 height: 40,
+                minWidth: 88,
                 gap: 8,
-                background: activeFilter === 'value' ? "rgba(0, 35, 111, 0.06)" : "transparent",
+                background: (hoveredFilter === 'value' || (valueRange.from || valueRange.to) || activeFilter === 'value') ? "#E6E9F1" : "transparent",
                 cursor: "pointer",
                 fontFamily: "Inter, sans-serif",
                 fontSize: 14,
@@ -254,19 +422,54 @@ const Deals = () => {
               }}
             >
               Value
-              <ChevronDown size={16} color="#4B5563" />
+              {(valueRange.from || valueRange.to) ? (
+                <div style={{
+                  background: "#B0BBD2",
+                  width: 20,
+                  height: 22,
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 2,
+                  boxSizing: "border-box",
+                  fontSize: 11,
+                  color: "#141414",
+                  fontWeight: 600,
+                }}>
+                  1
+                </div>
+              ) : activeFilter === 'value' ? (
+                <ChevronUp size={16} color="#4B5563" />
+              ) : (
+                <ChevronDown size={16} color="#4B5563" />
+              )}
             </button>
             {activeFilter === 'value' && (
               <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 500, marginTop: 4 }}>
-                <Value onApply={() => setActiveFilter(null)} onClear={() => setActiveFilter(null)} />
+                <Value
+                  onClose={() => setActiveFilter(null)}
+                  onApply={(values) => {
+                    setValueRange({ from: values.from, to: values.to });
+                    setActiveFilter(null);
+                    setCurrentPage(1);
+                  }}
+                  onClear={() => {
+                    setValueRange({});
+                    setActiveFilter(null);
+                    setCurrentPage(1);
+                  }}
+                />
               </div>
             )}
           </div>
 
-          {/* Created by dropdown */}
-          <div style={{ position: "relative", marginLeft: 12 }}>
+          {/* Created by */}
+          <div style={{ position: "relative" }}>
             <button
               onClick={() => setActiveFilter(activeFilter === 'created_by' ? null : 'created_by')}
+              onMouseEnter={() => setHoveredFilter('created_by')}
+              onMouseLeave={() => setHoveredFilter(null)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -275,21 +478,39 @@ const Deals = () => {
                 padding: "0 12px",
                 height: 40,
                 gap: 8,
-                background: activeFilter === 'created_by' ? "rgba(0, 35, 111, 0.06)" : "transparent",
+                background: (hoveredFilter === 'created_by' || selectedCreatedByMember !== "Created by" || activeFilter === 'created_by') ? "#E6E9F1" : "transparent",
                 cursor: "pointer",
                 fontFamily: "Inter, sans-serif",
-                fontSize: 16,
-                fontStyle: "normal",
-                fontWeight: 400,
-                lineHeight: "normal",
-                color: "var(--Foundation-neutral-neutral-800, #464646)",
+                fontSize: 14,
+                color: "#4B5563",
                 boxSizing: "border-box",
                 flexShrink: 0,
                 whiteSpace: "nowrap",
               }}
             >
               <span style={{ whiteSpace: "nowrap" }}>{selectedCreatedByMember}</span>
-              <ChevronDown size={16} color="var(--Foundation-neutral-neutral-800, #464646)" style={{ flexShrink: 0 }} />
+              {selectedCreatedByMember !== "Created by" ? (
+                <div style={{
+                  background: "#B0BBD2",
+                  width: 20,
+                  height: 22,
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 2,
+                  boxSizing: "border-box",
+                  fontSize: 11,
+                  color: "#141414",
+                  fontWeight: 600,
+                }}>
+                  1
+                </div>
+              ) : activeFilter === 'created_by' ? (
+                <ChevronUp size={16} color="#4B5563" style={{ flexShrink: 0 }} />
+              ) : (
+                <ChevronDown size={16} color="#4B5563" style={{ flexShrink: 0 }} />
+              )}
             </button>
             {activeFilter === 'created_by' && (
               <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 500, marginTop: 4 }}>
@@ -304,39 +525,82 @@ const Deals = () => {
               </div>
             )}
           </div>
+
+          {/* Reset Filters */}
+          <button
+            onClick={() => {
+              setDateFilter(null);
+              setValueRange({});
+              setSelectedCreatedByMember("Created by");
+              setSearchTerm("");
+              setCurrentPage(1);
+              setActiveFilter(null);
+            }}
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--Foundation-brand-brand-500, #00236F)",
+              fontFamily: "Inter",
+              fontSize: 16,
+              fontStyle: "normal",
+              fontWeight: 400,
+              lineHeight: "normal",
+              padding: 0,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Reset Filters
+          </button>
         </div>
 
         {/* Sort by button (Right group) */}
-        <div className="filter-bar-right" style={{ position: "relative" }}>
-          <button
-            onClick={() => setActiveFilter(activeFilter === 'sort' ? null : 'sort')}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "1px solid rgba(212, 213, 216, 1)",
-              borderRadius: 12,
-              paddingRight: 12,
-              paddingLeft: 12,
-              height: 40,
-              width: 108,
-              gap: 8,
-              background: activeFilter === 'sort' ? "rgba(0, 35, 111, 0.06)" : "transparent",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-              fontSize: 14,
-              color: "#4B5563",
-              boxSizing: "border-box",
-            }}
-          >
-            Sort by
-            <ArrowDownUp size={16} color="#4B5563" />
-          </button>
-          {activeFilter === 'sort' && (
-            <div style={{ position: "absolute", top: "100%", right: 0, zIndex: 500, marginTop: 4 }}>
-              <Sort isOpen={true} onClose={() => setActiveFilter(null)} onApply={() => setActiveFilter(null)} />
-            </div>
-          )}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div className="filter-bar-right" style={{ position: "relative" }}>
+            <button
+              onClick={() => setActiveFilter(activeFilter === 'sort' ? null : 'sort')}
+              onMouseEnter={() => setHoveredFilter('sort')}
+              onMouseLeave={() => setHoveredFilter(null)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid rgba(212, 213, 216, 1)",
+                borderRadius: 12,
+                paddingRight: 12,
+                paddingLeft: 12,
+                height: 40,
+                width: 108,
+                gap: 8,
+                background: hoveredFilter === 'sort' ? "#E6E9F1" : "transparent",
+                cursor: "pointer",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 14,
+                color: "#4B5563",
+                boxSizing: "border-box",
+              }}
+            >
+              Sort by
+              <ArrowDownUp size={16} color="#4B5563" />
+            </button>
+            {activeFilter === 'sort' && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{ position: "absolute", top: "100%", right: 0, zIndex: 500, marginTop: 4 }}
+              >
+                <Sort
+                  isOpen={true}
+                  onClose={() => setActiveFilter(null)}
+                  defaultValue={sortOption}
+                  onApply={(selectedValue) => {
+                    setSortOption(selectedValue);
+                    setActiveFilter(null);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -402,198 +666,238 @@ const Deals = () => {
 
         {/* Table Body */}
         <div style={{ width: "100%", background: "#fff" }}>
-          {deals
-            .filter((deal) => {
-              if (selectedCreatedByMember !== "Created by") {
-                return deal.createdBy === selectedCreatedByMember;
-              }
-              return true;
-            })
-            .map((deal, i, arr) => {
-              const originalIndex = deals.indexOf(deal);
-              return (
-                <div
-                  key={i}
-                  className="responsive-table-row"
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "16px 12px",
-                    boxSizing: "border-box",
-                    height: 72,
-                    borderBottom: i < arr.length - 1 ? "1px solid rgba(237, 239, 242, 1)" : "none",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  {/* Date */}
+          {isLoading ? (
+            <div style={{ padding: 24, textAlign: "center", color: "#6B7280", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
+              Loading deals...
+            </div>
+          ) : dealsList.length === 0 ? (
+            <div style={{ padding: 24, textAlign: "center", color: "#6B7280", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
+              No deals found.
+            </div>
+          ) : (
+            sortedDeals
+              .filter((deal) => {
+                if (selectedCreatedByMember !== "Created by") {
+                  const authorName = deal.author ? `${deal.author.first_name} ${deal.author.last_name}` : "System";
+                  return authorName.toLowerCase().includes(selectedCreatedByMember.toLowerCase().replace("created by", "").trim());
+                }
+                return true;
+              })
+              .map((deal, i, arr) => {
+                const formattedDate = new Date(deal.created_at).toLocaleDateString('en-GB');
+                const authorName = deal.author ? `${deal.author.first_name} ${deal.author.last_name}` : "System";
+                const clientName = deal.lead?.name || "--";
+                const companyName = (deal.lead as any)?.company_name || "--";
+                const phoneNumber = deal.lead?.phone || "";
+                const maskedPhone = phoneNumber ? ("*******" + phoneNumber.slice(-4)) : "--";
+
+                return (
                   <div
+                    key={deal.id}
+                    className="responsive-table-row"
                     style={{
-                      width: 70,
-                      flexShrink: 0,
-                      fontFamily: "Inter, sans-serif",
-                      fontWeight: 400,
-                      fontSize: 13,
-                      lineHeight: "140%",
-                      letterSpacing: 0,
-                      color: "#4B5563",
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "16px 12px",
+                      boxSizing: "border-box",
+                      height: 72,
+                      borderBottom: i < arr.length - 1 ? "1px solid rgba(237, 239, 242, 1)" : "none",
+                      justifyContent: "space-between",
                     }}
                   >
-                    {deal.date}
-                  </div>
-
-                  {/* Created by */}
-                  <div
-                    style={{
-                      width: 146,
-                      flexShrink: 0,
-                      fontFamily: "Inter, sans-serif",
-                      fontWeight: 400,
-                      fontSize: 13,
-                      lineHeight: "140%",
-                      color: "var(--Foundation-neutral-neutral-800, #464646)",
-                    }}
-                  >
-                    {deal.createdBy}
-                  </div>
-
-                  {/* Customer Info */}
-                  <div style={{ width: 146, flexShrink: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-                    <span
+                    {/* Date */}
+                    <div
                       style={{
-                        fontFamily: "Inter, sans-serif",
-                        fontWeight: 400,
-                        fontSize: 13,
-                        lineHeight: "140%",
-                        letterSpacing: 0,
-                        color: "#141414",
-                      }}
-                    >
-                      {deal.name}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "Inter, sans-serif",
-                        fontWeight: 400,
-                        fontSize: 13,
-                        lineHeight: "140%",
-                        letterSpacing: 0,
-                        color: "#6B7280",
-                      }}
-                    >
-                      {deal.company}
-                    </span>
-                  </div>
-
-                  {/* Phone number */}
-                  <div
-                    style={{
-                      width: 99,
-                      flexShrink: 0,
-                      fontFamily: "Inter, sans-serif",
-                      fontStyle: "normal",
-                      fontWeight: 400,
-                      fontSize: 13,
-                      lineHeight: "140%",
-                      letterSpacing: 0,
-                      color: "var(--Foundation-neutral-neutral-800, #464646)",
-                    }}
-                  >
-                    {"*******" + deal.phone.slice(-4)}
-                  </div>
-
-                  {/* City */}
-                  <div
-                    style={{
-                      width: 99,
-                      flexShrink: 0,
-                      fontFamily: "Inter, sans-serif",
-                      fontWeight: 400,
-                      fontSize: 13,
-                      lineHeight: "140%",
-                      letterSpacing: 0,
-                      color: "#4B5563",
-                    }}
-                  >
-                    {deal.city}
-                  </div>
-
-                  {/* Deal details */}
-                  <div style={{ width: 152, flexShrink: 0 }}>
-                    <span
-                      style={{
-                        fontFamily: "Inter, sans-serif",
-                        fontWeight: 400,
-                        fontSize: 13,
-                        lineHeight: "140%",
-                        letterSpacing: 0,
-                        color: "rgba(0, 35, 111, 1)",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => setIsServiceDetailsOpen(true)}
-                    >
-                      View Details
-                    </span>
-                  </div>
-
-                  {/* Value (EGP) */}
-                  <div style={{ width: 108, flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span
-                      style={{
-                        fontFamily: "Inter, sans-serif",
-                        fontWeight: 400,
-                        fontSize: 13,
-                        lineHeight: "140%",
-                        letterSpacing: 0,
-                        color: "#141414",
-                      }}
-                    >
-                      {deal.value}
-                    </span>
-                    <img onClick={() => setIsEditDealValueOpen(true)} src={editPenIcon} alt="edit value" width={16} height={16} style={{ cursor: "pointer", opacity: 0.55 }} />
-                  </div>
-
-                  {/* Actions */}
-                  <div style={{ width: 104, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
-                    <img src={whatsappIcon} alt="WhatsApp" width={24} height={24} style={{ cursor: "pointer" }} />
-                    <img src={mailIcon} alt="Email" width={24} height={24} style={{ cursor: "pointer" }} onClick={() => setIsNotesOpen(true)} />
-                    
-                    <button
-                      type="button"
-                      aria-label="Delete deal"
-                      onClick={(e) => openDeleteModal(e, originalIndex, deal.name, deal.date)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: 0,
-                        border: "none",
-                        background: "transparent",
-                        cursor: "pointer",
+                        width: 70,
                         flexShrink: 0,
+                        fontFamily: "Inter, sans-serif",
+                        fontWeight: 400,
+                        fontSize: 13,
+                        lineHeight: "140%",
+                        letterSpacing: 0,
+                        color: "#4B5563",
                       }}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        pointerEvents="none"
+                      {formattedDate}
+                    </div>
+
+                    {/* Created by */}
+                    <div
+                      style={{
+                        width: 146,
+                        flexShrink: 0,
+                        fontFamily: "Inter, sans-serif",
+                        fontWeight: 400,
+                        fontSize: 13,
+                        lineHeight: "140%",
+                        color: "var(--Foundation-neutral-neutral-800, #464646)",
+                      }}
+                    >
+                      {authorName}
+                    </div>
+
+                    {/* Customer Info */}
+                    <div style={{ width: 146, flexShrink: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span
+                        style={{
+                          fontFamily: "Inter, sans-serif",
+                          fontWeight: 400,
+                          fontSize: 13,
+                          lineHeight: "140%",
+                          letterSpacing: 0,
+                          color: "#141414",
+                        }}
                       >
-                        <path d="M4 6.17647H20M10 16.7647V10.4118M14 16.7647V10.4118M16 21H8C6.89543 21 6 20.0519 6 18.8824V7.23529C6 6.65052 6.44772 6.17647 7 6.17647H17C17.5523 6.17647 18 6.65052 18 7.23529V18.8824C18 20.0519 17.1046 21 16 21ZM10 6.17647H14C14.5523 6.17647 15 5.70242 15 5.11765V4.05882C15 3.47405 14.5523 3 14 3H10C9.44772 3 9 3.47405 9 4.05882V5.11765C9 5.70242 9.44772 6.17647 10 6.17647Z" stroke="#A80D0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
+                        {clientName}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Inter, sans-serif",
+                          fontWeight: 400,
+                          fontSize: 13,
+                          lineHeight: "140%",
+                          letterSpacing: 0,
+                          color: "#6B7280",
+                        }}
+                      >
+                        {companyName}
+                      </span>
+                    </div>
+
+                    {/* Phone number */}
+                    <div
+                      style={{
+                        width: 99,
+                        flexShrink: 0,
+                        fontFamily: "Inter, sans-serif",
+                        fontStyle: "normal",
+                        fontWeight: 400,
+                        fontSize: 13,
+                        lineHeight: "140%",
+                        letterSpacing: 0,
+                        color: "var(--Foundation-neutral-neutral-800, #464646)",
+                      }}
+                    >
+                      {maskedPhone}
+                    </div>
+
+                    {/* City */}
+                    <div
+                      style={{
+                        width: 99,
+                        flexShrink: 0,
+                        fontFamily: "Inter, sans-serif",
+                        fontWeight: 400,
+                        fontSize: 13,
+                        lineHeight: "140%",
+                        letterSpacing: 0,
+                        color: "#4B5563",
+                      }}
+                    >
+                      {deal.city}
+                    </div>
+
+                    {/* Deal details */}
+                    <div style={{ width: 152, flexShrink: 0 }}>
+                      <span
+                        style={{
+                          fontFamily: "Inter, sans-serif",
+                          fontWeight: 400,
+                          fontSize: 13,
+                          lineHeight: "140%",
+                          letterSpacing: 0,
+                          color: "rgba(0, 35, 111, 1)",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => {
+                          setSelectedDeal(deal);
+                          setIsServiceDetailsOpen(true);
+                        }}
+                      >
+                        View Details
+                      </span>
+                    </div>
+
+                    {/* Value (EGP) */}
+                    <div style={{ width: 108, flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span
+                        style={{
+                          fontFamily: "Inter, sans-serif",
+                          fontWeight: 400,
+                          fontSize: 13,
+                          lineHeight: "140%",
+                          letterSpacing: 0,
+                          color: "#141414",
+                        }}
+                      >
+                        {deal.value?.toLocaleString() || deal.value}
+                      </span>
+                      <img
+                        onClick={() => {
+                          setSelectedDeal(deal);
+                          setIsEditDealValueOpen(true);
+                        }}
+                        src={editPenIcon}
+                        alt="edit value"
+                        width={16}
+                        height={16}
+                        style={{ cursor: "pointer", opacity: 0.55 }}
+                      />
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ width: 104, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+                      <img src={whatsappIcon} alt="WhatsApp" width={24} height={24} style={{ cursor: "pointer" }} />
+                      <img
+                        src={mailIcon}
+                        alt="Email"
+                        width={24}
+                        height={24}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setSelectedDeal(deal);
+                          setIsNotesOpen(true);
+                        }}
+                      />
+                      
+                      <button
+                        type="button"
+                        aria-label="Delete deal"
+                        onClick={(e) => openDeleteModal(e, deal)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: 0,
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          pointerEvents="none"
+                        >
+                          <path d="M4 6.17647H20M10 16.7647V10.4118M14 16.7647V10.4118M16 21H8C6.89543 21 6 20.0519 6 18.8824V7.23529C6 6.65052 6.44772 6.17647 7 6.17647H17C17.5523 6.17647 18 6.65052 18 7.23529V18.8824C18 20.0519 17.1046 21 16 21ZM10 6.17647H14C14.5523 6.17647 15 5.70242 15 5.11765V4.05882C15 3.47405 14.5523 3 14 3H10C9.44772 3 9 3.47405 9 4.05882V5.11765C9 5.70242 9.44772 6.17647 10 6.17647Z" stroke="#A80D0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+          )}
         </div>
       </div>
 
       {/* ── Pagination ── */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-        <Pagination currentPage={currentPage} totalPages={4} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       </div>
       {/* ── Modals ── */}
       {isAddDealOpen && (
@@ -601,31 +905,50 @@ const Deals = () => {
           <Add_new_deal onClose={() => setIsAddDealOpen(false)} />
         </ModalOverlay>
       )}
-      {isNotesOpen && (
-        <ModalOverlay onClose={() => setIsNotesOpen(false)}>
-          <Notes onClose={() => setIsNotesOpen(false)} />
+      {isNotesOpen && selectedDeal && (
+        <ModalOverlay onClose={() => { setIsNotesOpen(false); setSelectedDeal(null); }}>
+          <Notes leadId={selectedDeal.lead_id} onClose={() => { setIsNotesOpen(false); setSelectedDeal(null); }} />
         </ModalOverlay>
       )}
-      {isServiceDetailsOpen && (
-        <ModalOverlay onClose={() => setIsServiceDetailsOpen(false)}>
-          <Service_details onClose={() => setIsServiceDetailsOpen(false)} />
+      {isServiceDetailsOpen && selectedDeal && (
+        <ModalOverlay onClose={() => { setIsServiceDetailsOpen(false); setSelectedDeal(null); }}>
+          <Service_details
+            leadsName={selectedDeal.lead?.name || ""}
+            initialDetails={selectedDeal.deals_details || ""}
+            onClose={() => { setIsServiceDetailsOpen(false); setSelectedDeal(null); }}
+            onSave={async (newDetails) => {
+              try {
+                await updateDeal({
+                  id: selectedDeal.id,
+                  body: { deals_details: newDetails }
+                }).unwrap();
+                toast.success("Service details updated successfully");
+              } catch (err: any) {
+                toast.error(err?.data?.message || "Failed to update service details");
+              }
+              setIsServiceDetailsOpen(false);
+              setSelectedDeal(null);
+            }}
+          />
         </ModalOverlay>
       )}
-      {isEditDealValueOpen && (
-        <ModalOverlay onClose={() => setIsEditDealValueOpen(false)}>
-          <EditDealValue onClose={() => setIsEditDealValueOpen(false)} />
+      {isEditDealValueOpen && selectedDeal && (
+        <ModalOverlay onClose={() => { setIsEditDealValueOpen(false); setSelectedDeal(null); }}>
+          <EditDealValue
+            dealId={selectedDeal.id}
+            initialValue={selectedDeal.value}
+            onClose={() => { setIsEditDealValueOpen(false); setSelectedDeal(null); }}
+          />
         </ModalOverlay>
       )}
       {dealToDelete && (
         <ModalOverlay onClose={() => setDealToDelete(null)}>
           <Delete_Deal
-            dealName={dealToDelete.name}
-            dealDate={dealToDelete.date}
+            dealId={dealToDelete.id}
+            dealName={dealToDelete.lead?.name || ""}
+            dealDate={new Date(dealToDelete.created_at).toLocaleDateString('en-GB')}
             onClose={() => setDealToDelete(null)}
-            onConfirm={() => {
-              setDeals((prev) => prev.filter((_, idx) => idx !== dealToDelete.index));
-              setDealToDelete(null);
-            }}
+            onConfirm={() => setDealToDelete(null)}
           />
         </ModalOverlay>
       )}

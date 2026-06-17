@@ -110,7 +110,7 @@ const Overview: React.FC = () => {
   };
 
   return (
-    <div style={{ background: "#F5F6FA", width: "100%", maxWidth: 1440, boxSizing: "border-box", paddingBottom: 32 }}>
+    <div style={{ background: "#F5F6FA", width: "100%", boxSizing: "border-box", paddingBottom: 32 }}>
       {/* Header */}
       <div className="overview-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

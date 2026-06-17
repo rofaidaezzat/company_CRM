@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import plusIcon from "../../assets/plus-02.svg";
 import closeIcon from "../../assets/x-02.svg";
+import calendarPlusIcon from "../../assets/calendar-plus.svg";
 import "../../styles/leads-modal-mobile.css";
-
+import { useCreateLeadMutation } from "../../app/service/crudleads";
+import { useGetSalesMembersQuery } from "../../app/service/crudsales";
+import { useAssignLeadMutation } from "../../app/service/crudAssignment_lead";
 
 interface AddNewLeadProps {
   onClose?: () => void;
@@ -11,6 +14,9 @@ interface AddNewLeadProps {
     companyName: string;
     phoneNumber: string;
     leadSource: string;
+    status?: string;
+    assignedToId?: string;
+    nextFollowup?: string;
   }) => void;
 }
 
@@ -38,23 +44,121 @@ const labelStyle: React.CSSProperties = {
   display: "block",
 };
 
+const STATUS_UI_TO_API: Record<string, string> = {
+  "Fresh": "FRESH",
+  "Follow up": "FOLLOW_UP",
+  "Interested": "INTERESTED",
+  "Not interested": "NOT_INTERESTED",
+  "Meeting": "MEETING",
+  "After meeting followup": "FOLLOW_UP_AFTER_MEETING",
+  "Wrong number": "WRONG_NUMBER",
+  "No answer": "NO_ANSWER",
+};
+
+const STATUS_OPTIONS = [
+  "Fresh",
+  "Follow up",
+  "Interested",
+  "Not interested",
+  "Meeting",
+  "After meeting followup",
+  "Wrong number",
+  "No answer",
+];
+
+const LEAD_SOURCE_OPTIONS = ["Organic", "Referral", "Ads", "Website", "Farmer"];
+
 const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
   const [leadName, setLeadName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  
+  // Custom dropdown states
   const [leadSource, setLeadSource] = useState("");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSourceOpen, setIsSourceOpen] = useState(false);
+
+  const [leadStatus, setLeadStatus] = useState("Fresh");
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+
+  const [assignTo, setAssignTo] = useState(""); // Stores sales member ID
+  const [assignName, setAssignName] = useState(""); // Stores sales member name
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
+
+  const [nextFollowup, setNextFollowup] = useState(""); // YYYY-MM-DD
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  const [createLead, { isLoading: isSaving }] = useCreateLeadMutation();
+  const [assignLead] = useAssignLeadMutation();
+  const { data: salesMembersResponse } = useGetSalesMembersQuery();
+  const salesMembers = salesMembersResponse?.data || [];
 
   const isSaveEnabled =
     leadName.trim() !== "" &&
     companyName.trim() !== "" &&
     phoneNumber.trim() !== "" &&
-    leadSource.trim() !== "";
+    leadSource.trim() !== "" &&
+    nextFollowup.trim() !== "";
 
-  const handleSave = () => {
-    if (!isSaveEnabled) return;
-    if (onSave) {
-      onSave({ leadName, companyName, phoneNumber, leadSource });
+  const getTodayDateString = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const handleDatePickerClick = () => {
+    try {
+      dateInputRef.current?.showPicker();
+    } catch (e) {
+      console.warn("showPicker is not supported or failed", e);
+    }
+  };
+
+  const formatDate = (iso: string) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  };
+
+  const handleSave = async () => {
+    if (!isSaveEnabled || isSaving) return;
+    try {
+      const res = await createLead({
+        name: leadName,
+        company_name: companyName,
+        phone: phoneNumber,
+        source: leadSource.toUpperCase(),
+        status: STATUS_UI_TO_API[leadStatus] || "FRESH",
+        next_follow_up: nextFollowup ? `${nextFollowup}T00:00:00.000Z` : null,
+      }).unwrap();
+
+      const createdLeadId = res.data?.id;
+      if (createdLeadId && assignTo) {
+        try {
+          await assignLead({
+            lead_id: createdLeadId,
+            sales_id: assignTo,
+          }).unwrap();
+        } catch (assignErr) {
+          console.error("Failed to assign lead after creation:", assignErr);
+        }
+      }
+
+      if (onSave) {
+        onSave({
+          leadName,
+          companyName,
+          phoneNumber,
+          leadSource,
+          status: leadStatus,
+          assignedToId: assignTo,
+          nextFollowup,
+        });
+      }
+      onClose?.();
+    } catch (err) {
+      console.error("Failed to add new lead:", err);
     }
   };
 
@@ -63,8 +167,8 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
     e.currentTarget.style.background = "#fff";
   };
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
-    e.currentTarget.style.borderColor = "var(--Foundation-brand-brand-500, #00236F)";
-    e.currentTarget.style.background = "#fff";
+    e.currentTarget.style.borderColor = "var(--Foundation-brand-brand-500, #D4D5D8)";
+    e.currentTarget.style.background = "transparent";
   };
 
   return (
@@ -72,7 +176,7 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
       className="leads-modal-root"
       style={{
         width: 462,
-        height: 580,
+        height: 650,
         opacity: 1,
         display: "flex",
         flexDirection: "column",
@@ -198,6 +302,241 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
           />
         </div>
 
+        {/* Status */}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <label style={labelStyle}>Status</label>
+          <div style={{ position: "relative", width: "100%" }}>
+            <div
+              onClick={() => setIsStatusOpen(!isStatusOpen)}
+              style={{
+                ...inputStyle,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                color: leadStatus ? "#141414" : "#6B7280",
+                cursor: "pointer",
+                userSelect: "none",
+                borderColor: "var(--Foundation-brand-brand-500, #D4D5D8)",
+              }}
+            >
+              <span>{leadStatus || "Choose a status"}</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  transform: isStatusOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s",
+                  flexShrink: 0,
+                }}
+              >
+                <path d="M6 9L12 15L18 9" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            
+            {isStatusOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  marginTop: 8,
+                  background: "#fff",
+                  border: "1px solid rgba(212, 213, 216, 1)",
+                  borderRadius: 8,
+                  boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.08)",
+                  zIndex: 10,
+                  padding: "8px 0",
+                  display: "flex",
+                  flexDirection: "column",
+                  maxHeight: 200,
+                  overflowY: "auto",
+                }}
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <div
+                    key={option}
+                    onClick={() => {
+                      setLeadStatus(option);
+                      setIsStatusOpen(false);
+                    }}
+                    style={{
+                      padding: "12px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      cursor: "pointer",
+                      background: leadStatus === option ? "rgba(245, 246, 250, 1)" : "#fff",
+                      transition: "background 0.2s",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245, 246, 250, 1)")}
+                    onMouseLeave={(e) => {
+                      if (leadStatus !== option) {
+                        e.currentTarget.style.background = "#fff";
+                      }
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        border: leadStatus === option ? "5px solid #00236F" : "2px solid #8B909A",
+                        boxSizing: "border-box",
+                        transition: "border 0.2s",
+                      }}
+                    />
+                    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#141414" }}>
+                      {option}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Assign to */}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <label style={labelStyle}>Assign to</label>
+          <div style={{ position: "relative", width: "100%" }}>
+            <div
+              onClick={() => setIsAssignOpen(!isAssignOpen)}
+              style={{
+                ...inputStyle,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                color: assignName ? "#141414" : "#6B7280",
+                cursor: "pointer",
+                userSelect: "none",
+                borderColor: "var(--Foundation-brand-brand-500, #D4D5D8)",
+              }}
+            >
+              <span>{assignName || "Select sales name"}</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  transform: isAssignOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s",
+                  flexShrink: 0,
+                }}
+              >
+                <path d="M6 9L12 15L18 9" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            
+            {isAssignOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  marginTop: 8,
+                  background: "#fff",
+                  border: "1px solid rgba(212, 213, 216, 1)",
+                  borderRadius: 8,
+                  boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.08)",
+                  zIndex: 10,
+                  padding: "8px 0",
+                  display: "flex",
+                  flexDirection: "column",
+                  maxHeight: 200,
+                  overflowY: "auto",
+                }}
+              >
+                <div
+                  onClick={() => {
+                    setAssignTo("");
+                    setAssignName("");
+                    setIsAssignOpen(false);
+                  }}
+                  style={{
+                    padding: "12px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    cursor: "pointer",
+                    background: assignTo === "" ? "rgba(245, 246, 250, 1)" : "#fff",
+                    transition: "background 0.2s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245, 246, 250, 1)")}
+                  onMouseLeave={(e) => {
+                    if (assignTo !== "") {
+                      e.currentTarget.style.background = "#fff";
+                    }
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      border: assignTo === "" ? "5px solid #00236F" : "2px solid #8B909A",
+                      boxSizing: "border-box",
+                      transition: "border 0.2s",
+                    }}
+                  />
+                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#141414" }}>
+                    Unassigned
+                  </span>
+                </div>
+                {salesMembers.map((member) => {
+                  const fullName = `${member.first_name} ${member.last_name}`;
+                  const isSelected = assignTo === member.id;
+                  return (
+                    <div
+                      key={member.id}
+                      onClick={() => {
+                        setAssignTo(member.id);
+                        setAssignName(fullName);
+                        setIsAssignOpen(false);
+                      }}
+                      style={{
+                        padding: "12px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        cursor: "pointer",
+                        background: isSelected ? "rgba(245, 246, 250, 1)" : "#fff",
+                        transition: "background 0.2s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245, 246, 250, 1)")}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.background = "#fff";
+                        }
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: "50%",
+                          border: isSelected ? "5px solid #00236F" : "2px solid #8B909A",
+                          boxSizing: "border-box",
+                          transition: "border 0.2s",
+                        }}
+                      />
+                      <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#141414" }}>
+                        {fullName}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Lead Source */}
         <div style={{ display: "flex", flexDirection: "column" }}>
           <label style={labelStyle}>
@@ -206,7 +545,7 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
           <div style={{ position: "relative", width: "100%" }}>
             {/* Custom Select Box */}
             <div
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              onClick={() => setIsSourceOpen(!isSourceOpen)}
               style={{
                 ...inputStyle,
                 display: "flex",
@@ -215,7 +554,7 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
                 color: leadSource ? "#141414" : "#6B7280",
                 cursor: "pointer",
                 userSelect: "none",
-                borderColor: "var(--Foundation-brand-brand-500, #00236F)",
+                borderColor: "var(--Foundation-brand-brand-500, #D4D5D8)",
               }}
             >
               <span>{leadSource || "Choose a lead source"}</span>
@@ -226,7 +565,7 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
                 style={{
-                  transform: isDropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transform: isSourceOpen ? "rotate(180deg)" : "rotate(0deg)",
                   transition: "transform 0.2s",
                   flexShrink: 0,
                 }}
@@ -236,7 +575,7 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
             </div>
 
             {/* Dropdown Menu */}
-            {isDropdownOpen && (
+            {isSourceOpen && (
               <div
                 style={{
                   position: "absolute",
@@ -254,12 +593,12 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
                   flexDirection: "column",
                 }}
               >
-                {["Organic", "Referral", "Ads", "Website", "Farmer"].map((option) => (
+                {LEAD_SOURCE_OPTIONS.map((option) => (
                   <div
                     key={option}
                     onClick={() => {
                       setLeadSource(option);
-                      setIsDropdownOpen(false);
+                      setIsSourceOpen(false);
                     }}
                     style={{
                       padding: "12px 16px",
@@ -304,10 +643,65 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
           </div>
         </div>
 
+        {/* Next followup */}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <label style={labelStyle}>
+            Next followup<span style={{ color: "var(--Foundation-brand-brand-500, #00236F)" }}>*</span>
+          </label>
+          <div
+            onClick={handleDatePickerClick}
+            style={{ position: "relative", width: "100%", cursor: "pointer" }}
+          >
+            <input
+              type="text"
+              readOnly
+              value={formatDate(nextFollowup)}
+              placeholder="DD/MM/YYYY"
+              style={{
+                ...inputStyle,
+                paddingRight: 48,
+                caretColor: "transparent",
+                cursor: "pointer",
+                borderColor: "var(--Foundation-brand-brand-500, #D4D5D8)",
+              }}
+            />
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={nextFollowup}
+              min={getTodayDateString()}
+              onChange={(e) => setNextFollowup(e.target.value)}
+              style={{
+                position: "absolute",
+                inset: 0,
+                opacity: 0,
+                cursor: "pointer",
+                width: "100%",
+                height: "100%",
+                zIndex: 1,
+              }}
+            />
+            <img
+              src={calendarPlusIcon}
+              alt="Pick date"
+              width={22}
+              height={22}
+              style={{
+                position: "absolute",
+                right: 14,
+                top: "50%",
+                transform: "translateY(-50%)",
+                pointerEvents: "none",
+                zIndex: 2,
+              }}
+            />
+          </div>
+        </div>
+
         {/* Save button */}
         <button
           onClick={handleSave}
-          disabled={!isSaveEnabled}
+          disabled={!isSaveEnabled || isSaving}
           style={{
             marginTop: "auto",
             alignSelf: "center",
@@ -315,14 +709,14 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
             height: 48,
             borderRadius: 12,
             border: "none",
-            background: isSaveEnabled
+            background: (isSaveEnabled && !isSaving)
               ? "rgba(0, 35, 111, 1)"
               : "rgba(212, 213, 216, 1)",
-            color: isSaveEnabled ? "#fff" : "#9CA3AF",
+            color: (isSaveEnabled && !isSaving) ? "#fff" : "#9CA3AF",
             fontFamily: "Inter, sans-serif",
             fontWeight: 600,
             fontSize: 15,
-            cursor: isSaveEnabled ? "pointer" : "not-allowed",
+            cursor: (isSaveEnabled && !isSaving) ? "pointer" : "not-allowed",
             transition: "background 0.2s, color 0.2s",
             display: "flex",
             alignItems: "center",
@@ -333,9 +727,10 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
             paddingLeft: 24,
             paddingRight: 24,
             boxSizing: "border-box",
+            flexShrink: 0,
           }}
         >
-          Save
+          {isSaving ? "Saving..." : "Save"}
         </button>
       </div>
     </div>

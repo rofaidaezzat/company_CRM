@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import checkSquareIcon from "../../assets/check-square-broken.svg";
 import closeIcon from "../../assets/x-02.svg";
 import "../../styles/leads-modal-mobile.css";
+import { useUpdateLeadMutation, useGetLeadQuery } from "../../app/service/crudleads";
+import { toast } from "sonner";
+import { useTranslation } from "../../context/LanguageContext";
 
 import addressIcon from "../../assets/Address.svg";
 import searchIcon from "../../assets/search-01.svg";
@@ -11,6 +14,8 @@ interface ConvertToDealProps {
   onConvert?: (data: { value: string; city: string; serviceDetails: string }) => void;
   leadName?: string;
   companyName?: string;
+  leadId?: any;
+  currentStatus?: any;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -22,7 +27,7 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "Inter, sans-serif",
   fontSize: 14,
   color: "#141414",
- background: "transparent",
+  background: "transparent",
   outline: "none",
   boxSizing: "border-box",
   transition: "border-color 0.2s",
@@ -58,20 +63,73 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
   onConvert,
   leadName = "John Dorghamasadsad",
   companyName = "Elshayeeb inc.",
+  leadId,
 }) => {
+  const { t } = useTranslation();
+  const { data: leadResponse, isLoading: isLeadLoading } = useGetLeadQuery(leadId, { skip: !leadId });
+  const [updateLead, { isLoading: isLeadUpdating }] = useUpdateLeadMutation();
+
+  const leadData = leadResponse?.data;
+
   const [value, setValue] = useState("");
   const [city, setCity] = useState("");
   const [serviceDetails, setServiceDetails] = useState("");
   const [isCityOpen, setIsCityOpen] = useState(false);
   const [citySearch, setCitySearch] = useState("");
 
+  const isMutationLoading = isLeadUpdating;
+
   const isConvertEnabled =
+    !isMutationLoading &&
+    !isLeadLoading &&
     value.trim() !== "" && city.trim() !== "" && serviceDetails.trim() !== "";
 
-  const handleConvert = () => {
+  const handleConvert = async () => {
     if (!isConvertEnabled) return;
-    if (onConvert) {
-      onConvert({ value, city, serviceDetails });
+    if (!leadId) {
+      toast.error("Lead ID is missing.");
+      return;
+    }
+    try {
+      const numericValue = Number(value);
+
+      if (isNaN(numericValue) || numericValue <= 0) {
+        toast.error("Value must be a valid positive number.");
+        return;
+      }
+
+      // Normalize city to match the backend enum ("CAIRO", "GIZA", "ALEXANDRIA")
+      const normalizedCity = (() => {
+        const lower = city.trim().toLowerCase();
+        if (lower === "cairo") return "CAIRO";
+        if (lower === "giza") return "GIZA";
+        if (lower === "alexandria") return "ALEXANDRIA";
+        return "CAIRO";
+      })();
+
+      // Single call: PATCH /api/v1/leads/:id?status=DEAL
+      // The backend requires value + city in the body to auto-create the deal record.
+      await updateLead({
+        id: leadId,
+        status: "DEAL",
+        body: {
+          status: "DEAL",
+          value: String(numericValue),
+          city: normalizedCity,
+        },
+      }).unwrap();
+
+      toast.success(t('modal.conversionSuccess'));
+
+      if (onConvert) {
+        onConvert({ value, city, serviceDetails });
+      }
+      if (onClose) onClose();
+    } catch (err: any) {
+      console.error("Conversion failed:", err);
+      const raw = err?.data?.message ?? err?.message ?? t('modal.conversionFailed');
+      const errMsg = Array.isArray(raw) ? raw.join("\n") : raw;
+      toast.error(errMsg);
     }
   };
 
@@ -82,7 +140,8 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
     e.currentTarget.style.borderColor = "rgba(212, 213, 216, 1)";
   };
 
-  const cities = ["City Name 1", "City Name 2", "City Name 3", "City Name 4", "City Name 5"];
+  // Backend enum only accepts CAIRO, GIZA, ALEXANDRIA
+  const cities = ["Cairo", "Giza", "Alexandria"];
 
   return (
     <div
@@ -126,7 +185,7 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
               lineHeight: "100%",
             }}
           >
-            Convert to Deal
+            {t('modal.convertToDealTitle')}
           </span>
         </div>
         <button
@@ -198,7 +257,7 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
             </div>
             {/* Arrow */}
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 12H18M18 12L14 8M18 12L14 16" stroke="#D4D5D8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M4 12H18M18 12L14 8M18 12L14 16" stroke="#D4D5D8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <div
               style={{
@@ -219,7 +278,7 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
         {/* Value */}
         <div style={{ display: "flex", flexDirection: "column" }}>
           <label style={labelStyle}>
-            Value<span style={{ color: "#EF4444" }}>*</span>
+            {t('modal.dealValue')}<span style={{ color: "#EF4444" }}>*</span>
           </label>
           <input
             type="text"
@@ -234,7 +293,7 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
         {/* City Dropdown */}
         <div style={{ display: "flex", flexDirection: "column" }}>
           <label style={labelStyle}>
-            City<span style={{ color: "#EF4444" }}>*</span>
+            {t('modal.cityLabel')}<span style={{ color: "#EF4444" }}>*</span>
           </label>
           <div style={{ position: "relative", width: "100%" }}>
             <div
@@ -250,7 +309,7 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
                 borderColor: isCityOpen ? "#3B5BDB" : "rgba(212, 213, 216, 1)",
               }}
             >
-              <span>{city || "Select a City"}</span>
+              <span>{city || t('modal.chooseCity')}</span>
               <svg
                 width="20"
                 height="20"
@@ -263,7 +322,7 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
                   flexShrink: 0,
                 }}
               >
-                <path d="M6 9L12 15L18 9" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 9L12 15L18 9" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
 
@@ -304,7 +363,7 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
                   <img src={searchIcon} alt="Search" width={20} height={20} />
                   <input
                     type="text"
-                    placeholder="Search city"
+                    placeholder={t('navbar.searchPlaceholder')}
                     value={citySearch}
                     onChange={(e) => setCitySearch(e.target.value)}
                     style={{
@@ -363,7 +422,7 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
         {/* Service Details */}
         <div style={{ display: "flex", flexDirection: "column" }}>
           <label style={labelStyle}>
-            Service Details<span style={{ color: "#EF4444" }}>*</span>
+            {t('modal.serviceDetailsLabel')}<span style={{ color: "#EF4444" }}>*</span>
           </label>
           <textarea
             value={serviceDetails}
@@ -400,7 +459,7 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
             boxSizing: "border-box",
           }}
         >
-          Convert
+          {isMutationLoading ? t('modal.converting') : t('modal.convertButton')}
         </button>
       </div>
     </div>

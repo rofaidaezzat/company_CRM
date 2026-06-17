@@ -1,25 +1,30 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../../styles/filteration-mobile.css";
 
-const STATUS_OPTIONS = [
-  { label: "Fresh", count: 200 },
-  { label: "Deal", count: 200 },
-  { label: "Interested", count: 200 },
-  { label: "Not interested", count: 200 },
-  { label: "Meeting", count: 200 },
-  { label: "After meeting followup", count: 200 },
-  { label: "Wrong number", count: 200 },
-  { label: "No answer", count: 200 },
+const STATUS_OPTIONS: { label: string; apiKey: string }[] = [
+  { label: "Fresh", apiKey: "FRESH" },
+  { label: "Deal", apiKey: "DEAL" },
+  { label: "Interested", apiKey: "INTERESTED" },
+  { label: "Not interested", apiKey: "NOT_INTERESTED" },
+  { label: "Meeting", apiKey: "MEETING" },
+  { label: "After meeting followup", apiKey: "FOLLOW_UP_AFTER_MEETING" },
+  { label: "Wrong number", apiKey: "WRONG_NUMBER" },
+  { label: "No answer", apiKey: "NO_ANSWER" },
+  { label: "Follow up", apiKey: "FOLLOW_UP" },
+  { label: "Waiting", apiKey: "WAITING" },
+  { label: "Send WA", apiKey: "SEND_WA" },
 ];
 
 interface StatusProps {
   onApply?: (selected: string[]) => void;
   onClear?: () => void;
   onClose?: () => void;
+  initialSelected?: string[];
+  counts?: Record<string, number>;
 }
 
-const Status: React.FC<StatusProps> = ({ onApply, onClear, onClose }) => {
-  const [selected, setSelected] = useState<string[]>([]);
+const Status: React.FC<StatusProps> = ({ onApply, onClear, onClose, initialSelected, counts }) => {
+  const [selected, setSelected] = useState<string[]>(initialSelected || []);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,20 +57,25 @@ const Status: React.FC<StatusProps> = ({ onApply, onClear, onClose }) => {
     <div ref={containerRef} className="filter-modal" style={styles.container}>
       {/* Options list */}
       <div className="filter-list" style={styles.optionsList}>
-        {STATUS_OPTIONS.map((option) => (
-          <label key={option.label} className="filter-checkbox-row" style={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={selected.includes(option.label)}
-              onChange={() => toggleOption(option.label)}
-              style={styles.checkbox}
-            />
-            <span className="filter-text" style={styles.optionText}>
-              {option.label}
-              <span style={styles.count}> ({option.count})</span>
-            </span>
-          </label>
-        ))}
+        {STATUS_OPTIONS.map((option) => {
+          const count = counts?.[option.apiKey] ?? undefined;
+          return (
+            <label key={option.label} className="filter-checkbox-row" style={styles.checkboxRow}>
+              <input
+                type="checkbox"
+                checked={selected.includes(option.label)}
+                onChange={() => toggleOption(option.label)}
+                style={styles.checkbox}
+              />
+              <span className="filter-text" style={styles.optionText}>
+                {option.label}
+                {count !== undefined && (
+                  <span style={styles.count}> ({count})</span>
+                )}
+              </span>
+            </label>
+          );
+        })}
       </div>
 
       {/* Divider */}
@@ -92,7 +102,6 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "0px 2px 4px 0px rgba(0, 0, 0, 0.17)",
     background: "rgba(255, 255, 255, 1)",
     width: "322px",
-    height: "444px",
     borderRadius: "12px",
     paddingTop: "12px",
     paddingRight: "16px",
@@ -108,8 +117,8 @@ const styles: Record<string, React.CSSProperties> = {
 
   optionsList: {
     width: "290px",
-    height: "348px",
     minWidth: "290px",
+    maxHeight: "380px",
     display: "flex",
     flexDirection: "column",
     gap: "4px",

@@ -1,22 +1,33 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../../styles/filteration-mobile.css";
 
-const SOURCE_OPTIONS = [
-  { label: "Organic", count: 200 },
-  { label: "Referral", count: 200 },
-  { label: "Ads", count: 200 },
-  { label: "Website", count: 200 },
-  { label: "Farmer", count: 200 },
+const SOURCE_OPTIONS: { label: string; apiKey: string }[] = [
+  { label: "Organic", apiKey: "ORGANIC" },
+  { label: "Referral", apiKey: "REFERRAL" },
+  { label: "Ads", apiKey: "ADS" },
+  { label: "Website", apiKey: "WEBSITE" },
+  { label: "Farmer", apiKey: "FARMER" },
+  { label: "Facebook", apiKey: "FACEBOOK" },
+  { label: "TikTok", apiKey: "TIKTOK" },
+  { label: "Instagram", apiKey: "INSTAGRAM" },
+  { label: "WhatsApp", apiKey: "WHATSAPP" },
+  { label: "Telegram", apiKey: "TELEGRAM" },
+  { label: "LinkedIn", apiKey: "LINKEDIN" },
+  { label: "Twitter", apiKey: "TWITTER" },
+  { label: "YouTube", apiKey: "YOUTUBE" },
+  { label: "Other", apiKey: "OTHER" },
 ];
 
 interface SourceProps {
   onApply?: (selected: string[]) => void;
   onClear?: () => void;
   onClose?: () => void;
+  initialSelected?: string[];
+  counts?: Record<string, number>;
 }
 
-const Source: React.FC<SourceProps> = ({ onApply, onClear, onClose }) => {
-  const [selected, setSelected] = useState<string[]>([]);
+const Source: React.FC<SourceProps> = ({ onApply, onClear, onClose, initialSelected, counts }) => {
+  const [selected, setSelected] = useState<string[]>(initialSelected || []);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,20 +60,25 @@ const Source: React.FC<SourceProps> = ({ onApply, onClear, onClose }) => {
     <div ref={containerRef} className="filter-modal" style={styles.container}>
       {/* Options list */}
       <div className="filter-list" style={styles.optionsList}>
-        {SOURCE_OPTIONS.map((option) => (
-          <label key={option.label} className="filter-checkbox-row" style={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={selected.includes(option.label)}
-              onChange={() => toggleOption(option.label)}
-              style={styles.checkbox}
-            />
-            <span className="filter-text" style={styles.optionText}>
-              {option.label}
-              <span style={styles.count}> ({option.count})</span>
-            </span>
-          </label>
-        ))}
+        {SOURCE_OPTIONS.map((option) => {
+          const count = counts?.[option.apiKey] ?? undefined;
+          return (
+            <label key={option.label} className="filter-checkbox-row" style={styles.checkboxRow}>
+              <input
+                type="checkbox"
+                checked={selected.includes(option.label)}
+                onChange={() => toggleOption(option.label)}
+                style={styles.checkbox}
+              />
+              <span className="filter-text" style={styles.optionText}>
+                {option.label}
+                {count !== undefined && (
+                  <span style={styles.count}> ({count})</span>
+                )}
+              </span>
+            </label>
+          );
+        })}
       </div>
 
       {/* Divider */}
@@ -121,6 +137,8 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     alignItems: "flex-start",
     gap: "4px",
+    maxHeight: "380px",
+    overflowY: "auto",
   },
 
   checkboxRow: {

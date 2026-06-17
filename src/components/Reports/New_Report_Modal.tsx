@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../../styles/leads-modal-mobile.css";
+import { useGetTodayStatsQuery, useCreateReportMutation } from "../../app/service/crudreports";
+import { toast } from "sonner";
 
 interface NewReportModalProps {
   onClose?: () => void;
@@ -16,30 +18,15 @@ const getDynamicInputStyle = (value: string): React.CSSProperties => ({
   fontFamily: "Inter, sans-serif",
   fontSize: 14,
   color: "#141414",
-  background: value ? "#D4D5D8" : "transparent",
+  background: "transparent",
   outline: "none",
   boxSizing: "border-box",
-  transition: "border-color 0.2s, background 0.2s",
+  transition: "border-color 0.2s",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
   alignSelf: "stretch",
 });
-
-const readOnlyBoxStyle: React.CSSProperties = {
-  borderRadius: 8,
-  background: "#D4D5D8",
-  display: "flex",
-  height: 48,
-  padding: "20px",
-  justifyContent: "space-between",
-  alignItems: "center",
-  alignSelf: "stretch",
-  color: "#141414",
-  fontFamily: "Inter, sans-serif",
-  fontSize: 14,
-  boxSizing: "border-box",
-};
 
 const getDynamicTextareaStyle = (value: string): React.CSSProperties => ({
   width: "100%",
@@ -51,17 +38,17 @@ const getDynamicTextareaStyle = (value: string): React.CSSProperties => ({
   fontFamily: "Inter, sans-serif",
   fontSize: 14,
   color: "#141414",
-  background: value ? "#D4D5D8" : "transparent",
+  background: "transparent",
   outline: "none",
   boxSizing: "border-box",
-  transition: "border-color 0.2s, background 0.2s",
+  transition: "border-color 0.2s",
 });
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "Inter, sans-serif",
-  fontWeight: 400, // They look regular/medium
+  fontWeight: 400,
   fontSize: 14,
-  color: "#4B5563", // Dark grey text
+  color: "#4B5563",
   marginBottom: 8,
   display: "block",
 };
@@ -80,9 +67,44 @@ const New_Report_Modal: React.FC<NewReportModalProps> = ({
   const [dealsClosed, setDealsClosed] = useState("");
   const [dealsValue, setDealsValue] = useState("");
 
-  const handleSubmit = () => {
-    if (onSubmit) {
-      onSubmit({ calls, leads, followups, meetings, dealsClosed, dealsValue, priority, notes });
+  const { data: todayStats } = useGetTodayStatsQuery();
+  const [createReport, { isLoading }] = useCreateReportMutation();
+
+  useEffect(() => {
+    if (todayStats?.data) {
+      setDealsClosed(String(todayStats.data.deals_closed_today ?? 0));
+      setDealsValue(String(todayStats.data.revenue_today ?? 0));
+    }
+  }, [todayStats]);
+
+  const handleSubmit = async () => {
+    if (!calls || !leads || !followups || !meetings || !priority) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    try {
+      const payload = {
+        calls_today: Number(calls),
+        leads_contacted_today: Number(leads),
+        follow_ups_today: Number(followups),
+        meetings_today: Number(meetings),
+        deals_closed_today: Number(dealsClosed) || 0,
+        revenue_today: Number(dealsValue.replace(/,/g, "")) || 0,
+        top_periority_tomorrow: priority,
+        additional_notes: notes || undefined,
+      };
+
+      await createReport(payload).unwrap();
+      toast.success("Report submitted successfully!");
+      if (onSubmit) {
+        onSubmit(payload);
+      }
+      if (onClose) {
+        onClose();
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to submit report.");
     }
   };
 
@@ -114,27 +136,50 @@ const New_Report_Modal: React.FC<NewReportModalProps> = ({
       }}
     >
       {/* ── Header ── */}
-      <div className="leads-modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2
+      <div className="leads-modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <h2
+            style={{
+              margin: 0,
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 700,
+              fontSize: 20,
+              color: "#00236F",
+            }}
+          >
+            New Report
+          </h2>
+          <span
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 14,
+              color: "#6B7280",
+            }}
+          >
+            ({dateStr})
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Close"
           style={{
-            margin: 0,
-            fontFamily: "Inter, sans-serif",
-            fontWeight: 700,
-            fontSize: 20,
-            color: "#00236F", // Dark blue from screenshot
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            border: "1px solid rgba(212, 213, 216, 1)",
+            background: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            flexShrink: 0,
           }}
         >
-          New Report
-        </h2>
-        <span
-          style={{
-            fontFamily: "Inter, sans-serif",
-            fontSize: 14,
-            color: "#6B7280",
-          }}
-        >
-          {dateStr}
-        </span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
 
       {/* ── Form Body ── */}
@@ -146,6 +191,7 @@ const New_Report_Modal: React.FC<NewReportModalProps> = ({
           columnGap: 24,
           rowGap: 16,
           flex: 1,
+          overflowY: "auto",
         }}
       >
         {/* Row 1 */}
@@ -263,8 +309,9 @@ const New_Report_Modal: React.FC<NewReportModalProps> = ({
         <button
           className="leads-modal-footer-btn"
           onClick={handleSubmit}
+          disabled={isLoading}
           style={{
-            background: "rgba(0, 35, 111, 1)",
+            background: isLoading ? "rgba(0, 35, 111, 0.6)" : "rgba(0, 35, 111, 1)",
             width: 158,
             height: 56,
             borderRadius: 12,
@@ -273,7 +320,7 @@ const New_Report_Modal: React.FC<NewReportModalProps> = ({
             fontFamily: "Inter, sans-serif",
             fontWeight: 600,
             fontSize: 15,
-            cursor: "pointer",
+            cursor: isLoading ? "not-allowed" : "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -282,7 +329,7 @@ const New_Report_Modal: React.FC<NewReportModalProps> = ({
             transition: "background 0.2s",
           }}
         >
-          Submit Report
+          {isLoading ? "Submitting..." : "Submit Report"}
         </button>
       </div>
     </div>

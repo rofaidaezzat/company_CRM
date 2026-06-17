@@ -3,7 +3,7 @@ import checkSquareIcon from "../assets/check-square-broken.svg";
 import notificationIcon from "../assets/icon btn.svg";
 import NotificationsDropdown from "./Navbar/NotificationsDropdown";
 import NotificationDrawer from "./Navbar/NotificationDrawer";
-import Report_Bug from "./Bug_Report/Report_Bug";
+import Report_Bug from "./Support/Support";
 
 interface NavbarProps {
   onSearch?: (query: string) => void;

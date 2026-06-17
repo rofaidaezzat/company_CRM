@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import closeIcon from "../../assets/x-02.svg";
 import eyeClosedIcon from "../../assets/eye-closed.svg";
 import "../../styles/leads-modal-mobile.css";
+import { useChangePasswordMutation } from "../../app/service/crudsetting";
+import { toast } from "sonner";
 
 interface ChangePasswordProps {
   onClose?: () => void;
-  onSave?: (data: { currentPass: string; newPass: string; confirmPass: string }) => void;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -13,7 +14,7 @@ const inputStyle: React.CSSProperties = {
   height: 48,
   border: "1px solid rgba(212, 213, 216, 1)",
   borderRadius: 8,
-  padding: "0 40px 0 14px", // right padding for the icon
+  padding: "0 40px 0 14px",
   fontFamily: "Inter, sans-serif",
   fontSize: 14,
   color: "#141414",
@@ -69,7 +70,7 @@ const PasswordInput = ({
             cursor: "pointer",
             width: 20,
             height: 20,
-            opacity: show ? 0.5 : 1, // subtle visual difference when open
+            opacity: show ? 0.5 : 1,
           }}
         />
       </div>
@@ -77,14 +78,35 @@ const PasswordInput = ({
   );
 };
 
-const Change_password: React.FC<ChangePasswordProps> = ({ onClose, onSave }) => {
+const Change_password: React.FC<ChangePasswordProps> = ({ onClose }) => {
   const [currentPass, setCurrentPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave({ currentPass, newPass, confirmPass });
+  const [changePassword, { isLoading }] = useChangePasswordMutation();
+
+  const handleSave = async () => {
+    if (!currentPass || !newPass || !confirmPass) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+    if (newPass !== confirmPass) {
+      toast.error("New password and confirm password do not match.");
+      return;
+    }
+    try {
+      await changePassword({
+        current_password: currentPass,
+        new_password: newPass,
+      }).unwrap();
+      toast.success("Password changed successfully.");
+      onClose?.();
+    } catch (err: any) {
+      const msg =
+        err?.data?.message ||
+        (Array.isArray(err?.data?.message) ? err.data.message.join(", ") : null) ||
+        "Failed to change password.";
+      toast.error(msg);
     }
   };
 
@@ -161,30 +183,12 @@ const Change_password: React.FC<ChangePasswordProps> = ({ onClose, onSave }) => 
           gap: 16,
         }}
       >
-        <PasswordInput
-          label="Current password"
-          value={currentPass}
-          onChange={setCurrentPass}
-        />
-        <PasswordInput
-          label="New password"
-          value={newPass}
-          onChange={setNewPass}
-        />
-        <PasswordInput
-          label="Confirm password"
-          value={confirmPass}
-          onChange={setConfirmPass}
-        />
+        <PasswordInput label="Current password" value={currentPass} onChange={setCurrentPass} />
+        <PasswordInput label="New password" value={newPass} onChange={setNewPass} />
+        <PasswordInput label="Confirm password" value={confirmPass} onChange={setConfirmPass} />
 
         {/* Actions */}
-        <div
-          style={{
-            marginTop: "auto",
-            display: "flex",
-            gap: 12,
-          }}
-        >
+        <div style={{ marginTop: "auto", display: "flex", gap: 12 }}>
           <button
             onClick={onClose}
             style={{
@@ -205,21 +209,22 @@ const Change_password: React.FC<ChangePasswordProps> = ({ onClose, onSave }) => 
           </button>
           <button
             onClick={handleSave}
+            disabled={isLoading}
             style={{
               flex: 1,
               height: 48,
               borderRadius: 12,
               border: "none",
-              background: "rgba(0, 35, 111, 1)",
-              color: "#fff",
+              background: isLoading ? "rgba(212, 213, 216, 1)" : "rgba(0, 35, 111, 1)",
+              color: isLoading ? "#9CA3AF" : "#fff",
               fontFamily: "Inter, sans-serif",
               fontWeight: 600,
               fontSize: 15,
-              cursor: "pointer",
+              cursor: isLoading ? "not-allowed" : "pointer",
               transition: "background 0.2s",
             }}
           >
-            Save Changes
+            {isLoading ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>

@@ -1,0 +1,32 @@
+export const en = {
+  modal: {
+    editLeadTitle: 'Edit Lead Info',
+    forLead: 'for',
+    leadName: 'Lead name',
+    enterLeadName: 'Enter lead name',
+    companyName: 'Company name',
+    enterCompanyName: 'Enter company name',
+    phoneNumberLabel: 'Phone number',
+    enterPhoneNumber: 'Enter phone number',
+    leadSource: 'Lead Source',
+    chooseSource: 'Choose a lead source',
+    nextFollowup: 'Next followup',
+    saving: 'Saving...',
+    loadingLeadInfo: 'Loading lead info...',
+    convertToDealTitle: 'Convert to Deal',
+    dealValue: 'Value',
+    cityLabel: 'City',
+    chooseCity: 'Choose a City',
+    serviceDetailsLabel: 'Service Details',
+    converting: 'Converting...',
+    convertButton: 'Convert',
+    conversionSuccess: 'Lead converted to deal successfully.',
+    conversionFailed: 'Conversion failed.',
+  },
+  common: {
+    save: 'Save',
+  },
+  navbar: {
+    searchPlaceholder: 'Search city',
+  },
+};

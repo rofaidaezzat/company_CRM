@@ -1,0 +1,32 @@
+export const ar = {
+  modal: {
+    editLeadTitle: 'تعديل بيانات العميل',
+    forLead: 'للعميل',
+    leadName: 'اسم العميل',
+    enterLeadName: 'أدخل اسم العميل',
+    companyName: 'اسم الشركة',
+    enterCompanyName: 'أدخل اسم الشركة',
+    phoneNumberLabel: 'رقم الهاتف',
+    enterPhoneNumber: 'أدخل رقم الهاتف',
+    leadSource: 'مصدر العميل',
+    chooseSource: 'اختر مصدر العميل',
+    nextFollowup: 'المتابعة القادمة',
+    saving: 'جاري الحفظ...',
+    loadingLeadInfo: 'جاري تحميل بيانات العميل...',
+    convertToDealTitle: 'تحويل إلى صفقة',
+    dealValue: 'القيمة',
+    cityLabel: 'المدينة',
+    chooseCity: 'اختر المدينة',
+    serviceDetailsLabel: 'تفاصيل الخدمة',
+    converting: 'جاري التحويل...',
+    convertButton: 'تحويل',
+    conversionSuccess: 'تم تحويل العميل إلى صفقة بنجاح.',
+    conversionFailed: 'فشل التحويل.',
+  },
+  common: {
+    save: 'حفظ',
+  },
+  navbar: {
+    searchPlaceholder: 'ابحث عن مدينة',
+  },
+};
