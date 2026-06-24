@@ -1,234 +1,153 @@
 import React, { useState, useRef, useEffect } from 'react';
+import '../../styles/support-drawer-mobile.css';
+import { useTranslation } from '../../context/LanguageContext';
+import {
+  useGetTicketsQuery,
+  useCreateTicketMutation,
+  SupportTicket,
+  TicketStatus,
+  useGetSupportMessagesQuery,
+  useCreateSupportMessageMutation,
+  SupportMessage,
+} from '../../app/service/crudSupport ticket';
 
-interface Message {
-  id: number;
-  text: string;
-  sender: 'You' | 'Tech support';
-  date: string;
-}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-interface Ticket {
-  id: number;
-  title: string;
-  description: string;
-  status: 'Open' | 'Resolved';
-  time: string;
-  unread: boolean;
-  messages: Message[];
-}
+/** Map API status → UI display label */
+const statusLabel: Record<TicketStatus, string> = {
+  OPEN: 'Open',
+  IN_PROGRESS: 'In Progress',
+  CLOSED: 'Closed',
+};
+
+/** Map UI tab → API status for filter query */
+const tabToStatus: Record<'Open' | 'Resolved', TicketStatus | undefined> = {
+  Open: 'OPEN',
+  Resolved: undefined, // show CLOSED + IN_PROGRESS under "Resolved"
+};
+
+/** Format ISO date string to "DD/MM/YYYY , HH:mm" */
+const formatDate = (iso: string) => {
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} , ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+/** Human-readable relative time */
+const relativeTime = (iso: string) => {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hour${Math.floor(diff / 3600) > 1 ? 's' : ''} ago`;
+  return `${Math.floor(diff / 86400)} day${Math.floor(diff / 86400) > 1 ? 's' : ''} ago`;
+};
+
+/** Badge colours for each status */
+const badgeStyle = (status: TicketStatus): React.CSSProperties => {
+  if (status === 'OPEN') return { background: 'rgba(254, 226, 226, 1)', color: 'rgba(239, 68, 68, 1)' };
+  if (status === 'IN_PROGRESS') return { background: 'rgba(255, 237, 213, 1)', color: 'rgba(194, 65, 12, 1)' };
+  return { background: 'rgba(209, 250, 229, 1)', color: 'rgba(6, 95, 70, 1)' };
+};
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Report_BugProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
-  // Navigation states: 'LIST' | 'CREATE' | 'DETAILS'
+  const { t } = useTranslation();
   const [view, setView] = useState<'LIST' | 'CREATE' | 'DETAILS'>('LIST');
   const [activeTab, setActiveTab] = useState<'Open' | 'Resolved'>('Open');
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
 
   // New ticket form inputs
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-
-  // Chat message input
   const [replyText, setReplyText] = useState('');
 
   // Scroll ref for chat window
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Mock initial support tickets
-  const [tickets, setTickets] = useState<Ticket[]>([
-    {
-      id: 1,
-      title: "UI alignment issue",
-      description: "Lorem ipsum dolor sit amet consectetur. Nullam se...",
-      status: "Open",
-      time: "1 hour ago",
-      unread: true,
-      messages: [
-        {
-          id: 1,
-          sender: "You",
-          text: "Lorem ipsum dolor sit amet consectetur. Nec enim morbi tristique amet urna. Commodo venenatis libero in id aliquet morbi purus. Interdum commodo at amet eget. Tempor morbi tristique dapibus a dolor blandit.",
-          date: "25/03/2026 , 07:22"
-        },
-        {
-          id: 2,
-          sender: "Tech support",
-          text: "Lorem ipsum dolor sit amet consectetur. Nec enim morbi tristique amet urna. Commodo venenatis libero in id aliquet morbi purus. Interdum commodo at amet eget. Tempor morbi tristique dapibus a dolor blandit.",
-          date: "25/03/2026 , 07:22"
-        },
-        {
-          id: 3,
-          sender: "You",
-          text: "Lorem ipsum dolor sit amet consectetur. Nec enim morbi tristique amet urna. Commodo venenatis libero in id aliquet morbi purus. Interdum commodo at amet eget. Tempor morbi tristique dapibus a dolor blandit.",
-          date: "25/03/2026 , 07:22"
-        }
-      ]
-    },
-    {
-      id: 2,
-      title: "Login page button not responsive",
-      description: "Lorem ipsum dolor sit amet consectetur. Nullam se...",
-      status: "Resolved",
-      time: "1 hour ago",
-      unread: false,
-      messages: [
-        {
-          id: 1,
-          sender: "You",
-          text: "Lorem ipsum dolor sit amet consectetur. Nec enim morbi tristique amet urna. Commodo venenatis libero in id aliquet morbi purus. Interdum commodo at amet eget. Tempor morbi tristique dapibus a dolor blandit.",
-          date: "25/03/2026 , 07:22"
-        },
-        {
-          id: 2,
-          sender: "Tech support",
-          text: "We have updated the styling and JS handlers on the login page button. The login should now be completely functional on all mobile viewports.",
-          date: "25/03/2026 , 07:22"
-        }
-      ]
-    },
-    {
-      id: 3,
-      title: "Data loading error on dashboard",
-      description: "Lorem ipsum dolor sit amet...",
-      status: "Resolved",
-      time: "1 hour ago",
-      unread: false,
-      messages: [
-        {
-          id: 1,
-          sender: "You",
-          text: "The dashboard is showing a loading spinner indefinitely. Can you check?",
-          date: "24/03/2026 , 09:15"
-        },
-        {
-          id: 2,
-          sender: "Tech support",
-          text: "This was due to a database connection timeout. We've optimized the query and it is resolved now.",
-          date: "24/03/2026 , 10:00"
-        }
-      ]
-    },
-    {
-      id: 4,
-      title: "CSV Export formatting issue",
-      description: "Lorem ipsum dolor sit amet...",
-      status: "Resolved",
-      time: "1 hour ago",
-      unread: false,
-      messages: [
-        {
-          id: 1,
-          sender: "You",
-          text: "Exporting CSV splits columns incorrectly when text has commas.",
-          date: "20/03/2026 , 15:40"
-        },
-        {
-          id: 2,
-          sender: "Tech support",
-          text: "We have updated the exporter to wrap comma-containing fields in double quotes. The formatting should be correct now.",
-          date: "20/03/2026 , 16:30"
-        }
-      ]
-    }
-  ]);
+  // ── API hooks ──────────────────────────────────────────────────────────────
 
-  // Scroll to bottom of chat when new message is added or details view opens
+  const { data: ticketsData, isLoading, isFetching } = useGetTicketsQuery(
+    undefined,
+    { skip: !isOpen, refetchOnMountOrArgChange: true }
+  );
+
+  const [createTicket, { isLoading: isCreating }] = useCreateTicketMutation();
+
+  const { data: messagesData } = useGetSupportMessagesQuery(
+    { ticketId: selectedTicket?.id ?? '' },
+    { skip: !selectedTicket || view !== 'DETAILS', refetchOnMountOrArgChange: true }
+  );
+
+  const [createSupportMessage] = useCreateSupportMessageMutation();
+
+  // All tickets from API
+  const allTickets: SupportTicket[] = ticketsData?.data ?? [];
+
+  // Filter by tab: "Open" → OPEN only; "Resolved" → CLOSED + IN_PROGRESS
+  const filteredTickets = allTickets.filter(t =>
+    activeTab === 'Open' ? t.status === 'OPEN' : t.status !== 'OPEN'
+  );
+
+  // ── Effects ────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (view === 'DETAILS') {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [view, selectedTicket?.messages]);
+  }, [view, selectedTicket, messagesData]);
 
-  // Handle drawer close (reset state)
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   const handleClose = () => {
     onClose();
-    // Wait for slide-out animation to finish before resetting view
     setTimeout(() => {
       setView('LIST');
       setSelectedTicket(null);
       setTitle('');
       setDescription('');
-      setReplyText('');
     }, 300);
   };
 
-  const handleCreateTicketSubmit = (e: React.FormEvent) => {
+  const handleCreateTicketSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return;
-
-    const newTicketId = tickets.length + 1;
-    const now = new Date();
-    const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} , ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-    const newTicket: Ticket = {
-      id: newTicketId,
-      title: title.trim(),
-      description: description.trim(),
-      status: 'Open',
-      time: 'Just now',
-      unread: false,
-      messages: [
-        {
-          id: 1,
-          sender: 'You',
-          text: description.trim(),
-          date: formattedDate
-        }
-      ]
-    };
-
-    setTickets([newTicket, ...tickets]);
-    setTitle('');
-    setDescription('');
-    setView('LIST');
-    setActiveTab('Open');
-  };
-
-  const handleReplySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!replyText.trim() || !selectedTicket) return;
-
-    const now = new Date();
-    const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} , ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-    const newMessage: Message = {
-      id: selectedTicket.messages.length + 1,
-      sender: 'You',
-      text: replyText.trim(),
-      date: formattedDate
-    };
-
-    // Update messages in local state
-    const updatedTickets = tickets.map(t => {
-      if (t.id === selectedTicket.id) {
-        return {
-          ...t,
-          messages: [...t.messages, newMessage]
-        };
-      }
-      return t;
-    });
-
-    setTickets(updatedTickets);
-    setSelectedTicket(prev => prev ? { ...prev, messages: [...prev.messages, newMessage] } : null);
-    setReplyText('');
-  };
-
-  const handleTicketCardClick = (ticket: Ticket) => {
-    // Mark as read when clicked
-    if (ticket.unread) {
-      setTickets(tickets.map(t => t.id === ticket.id ? { ...t, unread: false } : t));
+    try {
+      await createTicket({ title: title.trim(), description: description.trim() }).unwrap();
+      setTitle('');
+      setDescription('');
+      setView('LIST');
+      setActiveTab('Open');
+    } catch (err) {
+      console.error('Failed to create ticket:', err);
     }
-    setSelectedTicket({ ...ticket, unread: false });
+  };
+
+  const handleTicketCardClick = (ticket: SupportTicket) => {
+    setSelectedTicket(ticket);
     setView('DETAILS');
   };
 
-  // Filtered tickets based on active tab
-  const filteredTickets = tickets.filter(t => t.status === activeTab);
+  const handleSendMessage = async () => {
+    if (!replyText.trim() || !selectedTicket) return;
+    try {
+      await createSupportMessage({
+        ticketId: selectedTicket.id,
+        message: replyText.trim(),
+      }).unwrap();
+      setReplyText('');
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -303,7 +222,7 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span style={{ fontSize: '18px', fontWeight: 600, color: '#141414' }}>Support</span>
+                <span style={{ fontSize: '18px', fontWeight: 600, color: '#141414' }}>{t('modal.supportTitle')}</span>
               </div>
 
               {/* Close Button */}
@@ -326,20 +245,8 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                   transition: 'box-shadow 0.15s',
                 }}
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M15 5L5 15M5 5L15 15"
-                    stroke="#464646"
-                    strokeWidth="1.67"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 5L5 15M5 5L15 15" stroke="#464646" strokeWidth="1.67" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </div>
@@ -378,9 +285,7 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                       onClick={() => setActiveTab(tab)}
                       style={{
                         borderRadius: '10px',
-                        background: isActive
-                          ? 'var(--Foundation-brand-brand-50, #E6E9F1)'
-                          : 'transparent',
+                        background: isActive ? 'var(--Foundation-brand-brand-50, #E6E9F1)' : 'transparent',
                         display: 'flex',
                         height: '28px',
                         padding: '0 16px',
@@ -397,7 +302,7 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                           color: isActive ? '#00236F' : '#808080',
                         }}
                       >
-                        {tab}
+                        {tab === 'Open' ? t('modal.ticketStatusOpen') : t('modal.ticketStatusClosed')}
                       </span>
                     </div>
                   );
@@ -416,7 +321,15 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                   paddingRight: '4px',
                 }}
               >
-                {filteredTickets.length > 0 ? (
+                {/* Loading state */}
+                {(isLoading || isFetching) && (
+                  <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '40px', color: '#808080', fontSize: '14px' }}>
+                    {t('modal.loadingTickets')}
+                  </div>
+                )}
+
+                {/* Tickets */}
+                {!isLoading && !isFetching && filteredTickets.length > 0 &&
                   filteredTickets.map(ticket => (
                     <div
                       key={ticket.id}
@@ -458,19 +371,8 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                           boxSizing: 'border-box',
                         }}
                       >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M20 21C20 19.6044 19.5 18.223 18.2 17.306C16.8 16.418 15.0 16 12.0 16C9.0 16 7.2 16.418 5.8 17.306C4.5 18.223 4.0 19.6044 4.0 21"
-                            stroke="#FFF"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                          />
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M20 21C20 19.6044 19.5 18.223 18.2 17.306C16.8 16.418 15.0 16 12.0 16C9.0 16 7.2 16.418 5.8 17.306C4.5 18.223 4.0 19.6044 4.0 21" stroke="#FFF" strokeWidth="2.5" strokeLinecap="round" />
                           <circle cx="12" cy="8" r="4.5" stroke="#FFF" strokeWidth="2.5" />
                         </svg>
                       </div>
@@ -479,12 +381,7 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                       <div className="support-drawer-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div
                           className="support-drawer-card-title-row"
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            width: '100%',
-                          }}
+                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}
                         >
                           <span
                             className="support-drawer-card-title"
@@ -509,18 +406,15 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                               fontWeight: 500,
                               borderRadius: '99px',
                               padding: '2px 8px',
-                              background:
-                                ticket.status === 'Open'
-                                  ? 'rgba(254, 226, 226, 1)'
-                                  : 'rgba(209, 250, 229, 1)',
-                              color:
-                                ticket.status === 'Open'
-                                  ? 'rgba(239, 68, 68, 1)'
-                                  : 'rgba(6, 95, 70, 1)',
                               flexShrink: 0,
+                              ...badgeStyle(ticket.status),
                             }}
                           >
-                            {ticket.status}
+                            {ticket.status === 'OPEN'
+                              ? t('modal.ticketStatusOpen')
+                              : ticket.status === 'IN_PROGRESS'
+                              ? t('modal.ticketStatusInProgress')
+                              : t('modal.ticketStatusClosed')}
                           </span>
                         </div>
 
@@ -540,25 +434,17 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                           {ticket.description}
                         </span>
 
-                        {/* Time & Unread Indicator */}
+                        {/* Time */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                          <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{ticket.time}</span>
-                          {ticket.unread && (
-                            <span
-                              style={{
-                                width: '6px',
-                                height: '6px',
-                                borderRadius: '50%',
-                                background: '#00236F',
-                                display: 'inline-block',
-                              }}
-                            />
-                          )}
+                          <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{relativeTime(ticket.created_at)}</span>
                         </div>
                       </div>
                     </div>
                   ))
-                ) : (
+                }
+
+                {/* Empty state */}
+                {!isLoading && !isFetching && filteredTickets.length === 0 && (
                   <div
                     style={{
                       display: 'flex',
@@ -572,7 +458,7 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                       paddingTop: '40px',
                     }}
                   >
-                    <span>No {activeTab.toLowerCase()} tickets found.</span>
+                    <span>{t('modal.noTicketsFound')}</span>
                   </div>
                 )}
               </div>
@@ -599,28 +485,11 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                 boxSizing: 'border-box',
                 transition: 'transform 0.2s ease, opacity 0.2s ease',
               }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                style={{ width: '20px', height: '20px', flexShrink: 0 }}
-              >
-                <path
-                  d="M12 5V19M5 12H19"
-                  stroke="#F5F6FA"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ width: '20px', height: '20px', flexShrink: 0 }}>
+                <path d="M12 5V19M5 12H19" stroke="#F5F6FA" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <span
                 style={{
@@ -633,7 +502,7 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                   lineHeight: 'normal',
                 }}
               >
-                New ticket
+                {t('modal.newTicketButton')}
               </span>
             </button>
           </div>
@@ -676,11 +545,11 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                   onMouseEnter={e => (e.currentTarget.style.color = '#141414')}
                   onMouseLeave={e => (e.currentTarget.style.color = '#808080')}
                 >
-                  Support
+                  {t('modal.supportTitle')}
                 </span>
                 <span style={{ fontSize: '18px', fontWeight: 500, color: '#808080' }}>/</span>
                 <span style={{ fontSize: '18px', fontWeight: 600, color: '#141414', marginLeft: '4px' }}>
-                  New support ticket
+                  {t('modal.newSupportTicketTitle')}
                 </span>
               </div>
 
@@ -704,33 +573,14 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                   transition: 'box-shadow 0.15s',
                 }}
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M15 5L5 15M5 5L15 15"
-                    stroke="#464646"
-                    strokeWidth="1.67"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 5L5 15M5 5L15 15" stroke="#464646" strokeWidth="1.67" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </div>
 
             {/* Form Fields container */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '24px',
-                width: '100%',
-              }}
-            >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
               {/* Title input row */}
               <div
                 style={{
@@ -741,18 +591,12 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                   alignSelf: 'stretch',
                 }}
               >
-                <label
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: 'var(--Foundation-neutral-neutral-950, #141414)',
-                  }}
-                >
-                  Title<span style={{ color: '#00236F' }}>*</span>
+                <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--Foundation-neutral-neutral-950, #141414)' }}>
+                  {t('modal.ticketTitleLabel')}<span style={{ color: '#00236F' }}>*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter support title..."
+                  placeholder={t('modal.ticketTitlePlaceholder')}
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   style={{
@@ -780,17 +624,11 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                   alignSelf: 'stretch',
                 }}
               >
-                <label
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: 'var(--Foundation-neutral-neutral-950, #141414)',
-                  }}
-                >
-                  Description<span style={{ color: '#00236F' }}>*</span>
+                <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--Foundation-neutral-neutral-950, #141414)' }}>
+                  {t('modal.ticketDescLabel')}<span style={{ color: '#00236F' }}>*</span>
                 </label>
                 <textarea
-                  placeholder="Describe your issue in details..."
+                  placeholder={t('modal.ticketDescPlaceholder')}
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   style={{
@@ -814,11 +652,11 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
               <button
                 className="support-drawer-send-btn"
                 type="submit"
-                disabled={!title.trim() || !description.trim()}
+                disabled={!title.trim() || !description.trim() || isCreating}
                 style={{
                   borderRadius: '12px',
                   background:
-                    title.trim() && description.trim()
+                    title.trim() && description.trim() && !isCreating
                       ? 'var(--Foundation-brand-brand-500, #00236F)'
                       : 'var(--Foundation-neutral-neutral-100, #D4D5D8)',
                   display: 'flex',
@@ -829,21 +667,21 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                   alignItems: 'center',
                   gap: '8px',
                   border: 'none',
-                  cursor: title.trim() && description.trim() ? 'pointer' : 'not-allowed',
-                  color: title.trim() && description.trim() ? '#FFF' : '#808080',
+                  cursor: title.trim() && description.trim() && !isCreating ? 'pointer' : 'not-allowed',
+                  color: title.trim() && description.trim() && !isCreating ? '#FFF' : '#808080',
                   fontSize: '16px',
                   fontWeight: 500,
                   boxSizing: 'border-box',
                   transition: 'background 0.2s ease',
                 }}
               >
-                Send
+                {isCreating ? t('modal.sending') : t('modal.sendButton')}
               </button>
             </div>
           </form>
         )}
 
-        {/* VIEW 3: TICKET DETAILS / CHAT VIEW */}
+        {/* VIEW 3: TICKET DETAILS VIEW */}
         {view === 'DETAILS' && selectedTicket && (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
             {/* Header */}
@@ -854,7 +692,7 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                 width: '100%',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '8px',
+                marginBottom: '32px',
               }}
             >
               {/* Back breadcrumb & Title */}
@@ -871,7 +709,7 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                   onMouseEnter={e => (e.currentTarget.style.color = '#141414')}
                   onMouseLeave={e => (e.currentTarget.style.color = '#808080')}
                 >
-                  Support
+                  {t('modal.supportTitle')}
                 </span>
                 <span style={{ fontSize: '18px', fontWeight: 500, color: '#808080' }}>/</span>
                 <span
@@ -910,54 +748,32 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                   transition: 'box-shadow 0.15s',
                 }}
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M15 5L5 15M5 5L15 15"
-                    stroke="#464646"
-                    strokeWidth="1.67"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 5L5 15M5 5L15 15" stroke="#464646" strokeWidth="1.67" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </div>
 
-            {/* Status Badge below Header (Aligned Right) */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                width: '100%',
-                marginBottom: '16px',
-              }}
-            >
+            {/* Status Badge (aligned right) */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginBottom: '16px' }}>
               <span
                 style={{
                   fontSize: '11px',
                   fontWeight: 500,
                   borderRadius: '99px',
                   padding: '2px 8px',
-                  background:
-                    selectedTicket.status === 'Open'
-                      ? 'rgba(254, 226, 226, 1)'
-                      : 'rgba(209, 250, 229, 1)',
-                  color:
-                    selectedTicket.status === 'Open'
-                      ? 'rgba(239, 68, 68, 1)'
-                      : 'rgba(6, 95, 70, 1)',
+                  ...badgeStyle(selectedTicket.status),
                 }}
               >
-                {selectedTicket.status}
+                {selectedTicket.status === 'OPEN'
+                  ? t('modal.ticketStatusOpen')
+                  : selectedTicket.status === 'IN_PROGRESS'
+                  ? t('modal.ticketStatusInProgress')
+                  : t('modal.ticketStatusClosed')}
               </span>
             </div>
 
-            {/* Chat Messages Log Area */}
+            {/* Ticket Info Area (shows description as first "message" from user, followed by subsequent replies) */}
             <div
               style={{
                 flex: 1,
@@ -969,26 +785,75 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                 marginBottom: '20px',
               }}
             >
-              {selectedTicket.messages.map(message => {
-                const isYou = message.sender === 'You';
+              {/* Creator initial description bubble */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+                <div
+                  className="support-drawer-message-bubble"
+                  style={{
+                    background: '#FFF',
+                    border: '1px solid var(--Foundation-neutral-neutral-100, #D4D5D8)',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    width: '390px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  {/* Date/Time */}
+                  <span style={{ fontSize: '11px', color: '#808080', textAlign: 'center', width: '100%', display: 'block' }}>
+                    {formatDate(selectedTicket.created_at)}
+                  </span>
+
+                  {/* Title */}
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#141414', lineHeight: '1.5', wordBreak: 'break-word' }}>
+                    {selectedTicket.title}
+                  </span>
+
+                  {/* Description body */}
+                  <span
+                    style={{
+                      fontSize: '13px',
+                      color: '#464646',
+                      lineHeight: '1.5',
+                      textAlign: 'left',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                    }}
+                  >
+                    {selectedTicket.description}
+                  </span>
+
+                  {/* Author */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', alignSelf: 'stretch' }}>
+                    <span style={{ fontSize: '11px', color: '#808080', fontWeight: 500 }}>
+                      {selectedTicket.created_by.first_name} {selectedTicket.created_by.last_name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chat replies history */}
+              {messagesData?.data?.map((msg) => {
+                const isCreator = msg.sender?.id === selectedTicket.created_by.id;
                 return (
                   <div
-                    key={message.id}
+                    key={msg.id}
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
-                      alignItems: isYou ? 'flex-start' : 'flex-end',
+                      alignItems: isCreator ? 'flex-start' : 'flex-end',
                       width: '100%',
                     }}
                   >
-                    {/* Message Bubble */}
                     <div
                       className="support-drawer-message-bubble"
                       style={{
-                        background: isYou ? '#FFF' : 'var(--Foundation-brand-brand-50, #E6E9F1)',
-                        border: isYou
+                        background: isCreator ? '#FFF' : '#F0F4FF',
+                        border: isCreator
                           ? '1px solid var(--Foundation-neutral-neutral-100, #D4D5D8)'
-                          : 'none',
+                          : '1px solid var(--Foundation-brand-brand-100, #E0E7FF)',
                         borderRadius: '12px',
                         padding: '12px 16px',
                         width: '390px',
@@ -998,20 +863,12 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                         boxSizing: 'border-box',
                       }}
                     >
-                      {/* Date/Time Header inside Bubble (Centered) */}
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          color: '#808080',
-                          textAlign: 'center',
-                          width: '100%',
-                          display: 'block',
-                        }}
-                      >
-                        {message.date}
+                      {/* Date/Time */}
+                      <span style={{ fontSize: '11px', color: '#808080', textAlign: 'center', width: '100%', display: 'block' }}>
+                        {formatDate(msg.created_at)}
                       </span>
 
-                      {/* Body text inside bubble */}
+                      {/* Message body */}
                       <span
                         style={{
                           fontSize: '13px',
@@ -1022,67 +879,130 @@ const Report_Bug: React.FC<Report_BugProps> = ({ isOpen, onClose }) => {
                           overflowWrap: 'break-word',
                         }}
                       >
-                        {message.text}
+                        {msg.message}
                       </span>
 
-                      {/* Author Label (bottom left) */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          alignSelf: 'stretch',
-                        }}
-                      >
+                      {/* Author */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', alignSelf: 'stretch' }}>
                         <span style={{ fontSize: '11px', color: '#808080', fontWeight: 500 }}>
-                          {message.sender}
+                          {msg.sender ? `${msg.sender.first_name} ${msg.sender.last_name}` : 'Support Agent'}
                         </span>
                       </div>
                     </div>
                   </div>
                 );
               })}
+
               <div ref={chatEndRef} />
             </div>
 
-            {/* Reply block (only if ticket is open) */}
-            {selectedTicket.status === 'Open' && (
-              <form
-                className="support-drawer-reply-form"
-                onSubmit={handleReplySubmit}
+            {/* Reply input — shown only for OPEN tickets */}
+            {selectedTicket.status === 'OPEN' ? (
+              <div
                 style={{
+                  borderRadius: '8px',
+                  border: '1px solid var(--Foundation-neutral-neutral-100, #D4D5D8)',
                   display: 'flex',
-                  flexDirection: 'column',
+                  padding: '12px',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
                   gap: '8px',
+                  alignSelf: 'stretch',
+                  boxSizing: 'border-box',
                   width: '100%',
-                  marginTop: 'auto',
                 }}
               >
+                {/* Textarea — grows to fill available space and matches tall design in screenshot */}
                 <textarea
-                  placeholder="Reply to messages..."
                   value={replyText}
                   onChange={e => setReplyText(e.target.value)}
                   onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    if (e.key === 'Enter' && !e.shiftKey && replyText.trim()) {
                       e.preventDefault();
-                      handleReplySubmit(e);
+                      handleSendMessage();
                     }
                   }}
+                  placeholder={t('modal.replyPlaceholder')}
                   style={{
-                    width: '100%',
-                    height: '80px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--Foundation-neutral-neutral-100, #D4D5D8)',
-                    background: '#FFF',
-                    padding: '12px',
-                    fontSize: '14px',
+                    flex: '1 0 0',
+                    height: '72px',
+                    border: 'none',
                     outline: 'none',
-                    resize: 'none',
-                    boxSizing: 'border-box',
+                    background: 'transparent',
+                    fontSize: '14px',
+                    color: '#141414',
                     fontFamily: 'Inter, sans-serif',
+                    resize: 'none',
+                    padding: 0,
+                    margin: 0,
                   }}
                 />
-              </form>
+
+                {/* Send button */}
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  style={{
+                    borderRadius: '12px',
+                    background: 'var(--Foundation-brand-brand-500, #00236F)',
+                    display: 'flex',
+                    width: '36px',
+                    height: '36px',
+                    padding: '6px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    aspectRatio: '1/1',
+                    border: 'none',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    boxSizing: 'border-box',
+                    transition: 'opacity 0.2s ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+                >
+                  {/* Right-pointing chevron icon matching screenshot */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="7"
+                    height="12"
+                    viewBox="0 0 7 12"
+                    fill="none"
+                    style={{
+                      width: '7px',
+                      height: '12px',
+                      display: 'block',
+                    }}
+                  >
+                    <path
+                      d="M1 1L6 6L1 11"
+                      stroke="#F5F6FA"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  background: 'rgba(209, 250, 229, 0.4)',
+                  fontSize: '13px',
+                  color: '#065F46',
+                }}
+              >
+                {selectedTicket.status === 'CLOSED'
+                  ? t('modal.ticketClosedMessage')
+                  : selectedTicket.status === 'IN_PROGRESS'
+                  ? t('modal.ticketInProgressMessage')
+                  : t('modal.ticketOpenMessage')}
+              </div>
             )}
           </div>
         )}

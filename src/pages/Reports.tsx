@@ -10,6 +10,7 @@ import DateFilter from '../components/Filteration/Date';
 import Value from '../components/Filteration/Value';
 import { Sort } from '../components/Filteration/Sort';
 import { useGetReportsQuery, Report } from '../app/service/crudreports';
+import { exportReportsPDF } from '../utils/exportPdf';
 
 
 
@@ -31,7 +32,68 @@ const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClos
   >
     <div onClick={(e) => e.stopPropagation()}>{children}</div>
   </div>
-);
+);const getPresetDateRange = (preset: string) => {
+  const today = new Date();
+  let start = new Date();
+  let end = new Date();
+
+  switch (preset) {
+    case "Today":
+      start = today;
+      end = today;
+      break;
+    case "Yesterday":
+      start = new Date(today);
+      start.setDate(today.getDate() - 1);
+      end = new Date(start);
+      break;
+    case "This week": {
+      const day = today.getDay();
+      start = new Date(today);
+      start.setDate(today.getDate() - day);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      break;
+    }
+    case "Last week": {
+      const day = today.getDay();
+      start = new Date(today);
+      start.setDate(today.getDate() - day - 7);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      break;
+    }
+    case "This month": {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      break;
+    }
+    case "Last month": {
+      start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      end = new Date(today.getFullYear(), today.getMonth(), 0);
+      break;
+    }
+    case "This year": {
+      start = new Date(today.getFullYear(), 0, 1);
+      end = new Date(today.getFullYear(), 11, 31);
+      break;
+    }
+    default:
+      break;
+  }
+
+  const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    startDate: formatLocalDate(start),
+    endDate: formatLocalDate(end)
+  };
+};
 
 const Reports = () => {
     const [activeFilter, setActiveFilter] = useState<'date' | 'value' | 'sort' | null>(null);
@@ -73,10 +135,10 @@ const Reports = () => {
         page: currentPage,
         limit: 10,
         search: debouncedSearch || undefined,
-        start_date: dateFilter?.startDate || undefined,
-        end_date: dateFilter?.endDate || undefined,
-        min_revenue: valueRange.from || undefined,
-        max_revenue: valueRange.to || undefined,
+        "date[gte]": dateFilter?.preset ? getPresetDateRange(dateFilter.preset).startDate : (dateFilter?.startDate || undefined),
+        "date[lte]": dateFilter?.preset ? getPresetDateRange(dateFilter.preset).endDate : (dateFilter?.endDate || undefined),
+        "revenue_today[gte]": valueRange.from || undefined,
+        "revenue_today[lte]": valueRange.to || undefined,
     };
 
     const { data, isLoading } = useGetReportsQuery(queryParams);
@@ -134,6 +196,13 @@ const Reports = () => {
         </div>
 
         <button
+          onClick={() => {
+            const activeFilters: string[] = [];
+            if (debouncedSearch) activeFilters.push(`Search: "${debouncedSearch}"`);
+            if (dateFilter?.startDate) activeFilters.push(`Date: ${dateFilter.startDate} → ${dateFilter.endDate ?? ''}`);
+            if (valueRange.from || valueRange.to) activeFilters.push(`Value: ${valueRange.from ?? '0'} – ${valueRange.to ?? '∞'}`);
+            exportReportsPDF(sortedReports as any[], activeFilters);
+          }}
           style={{
             borderRadius: 12,
             border: "1px solid var(--Foundation-brand-brand-500, #00236F)",
@@ -269,14 +338,6 @@ const Reports = () => {
                   fontSize: 14,
                   color: "#141414",
                 }}
-              />
-              <img
-                src={starsIcon}
-                alt="stars"
-                width={24}
-                height={24}
-                style={{ cursor: "pointer" }}
-                onClick={() => setIsAISearchOpen(true)}
               />
             </div>
           )}

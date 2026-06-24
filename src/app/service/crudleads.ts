@@ -227,7 +227,10 @@ export const leadsApi = createApi({
           });
         }
         const queryString = urlParams.toString();
-        return `api/v1/leads/stats${queryString ? `?${queryString}` : ''}`;
+        return {
+          url: `api/v1/leads/stats${queryString ? `?${queryString}` : ''}`,
+          cache: 'no-store',
+        };
       },
       providesTags: ['LeadStats'],
     }),

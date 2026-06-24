@@ -1,0 +1,62 @@
+/* =============================================
+   Support Drawer Mobile Responsive Styles
+   Only applies on screens ≤ 768px
+   Desktop / laptop inline styles are UNTOUCHED
+   ============================================= */
+
+@media (max-width: 768px) {
+  .support-drawer-panel {
+    width: 100vw !important;
+  }
+
+  .support-drawer-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .support-drawer-inner {
+    gap: 16px !important;
+  }
+
+  .support-drawer-card {
+    padding: 8px !important;
+  }
+
+  .support-drawer-card-body {
+    width: 100% !important;
+  }
+
+  .support-drawer-card-title-row {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  .support-drawer-card-title {
+    max-width: 180px !important;
+  }
+
+  .support-drawer-card-desc {
+    max-width: 100% !important;
+  }
+
+  .support-drawer-card-badge {
+    font-size: 10px !important;
+  }
+
+  .support-drawer-details-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .support-drawer-message-bubble {
+    width: 100% !important;
+  }
+
+  .support-drawer-send-container {
+    justify-content: center !important;
+  }
+
+  .support-drawer-send-btn {
+    width: 100% !important;
+  }
+}

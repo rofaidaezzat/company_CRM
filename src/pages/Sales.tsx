@@ -25,6 +25,7 @@ import { Sales_Card } from '../components/Sales/Sales_Card';
 import { Edit_Sales_Role } from '../components/Sales/Edit_Sales_Role';
 import { View_info } from '../components/Sales/View_info';
 import Delete_Sales from '../components/Sales/Delete_Sales';
+import { exportSalesPDF } from '../utils/exportPdf';
 import '../styles/Sales.css';// Reusable overlay for modals
 const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => {
   useEffect(() => {
@@ -245,6 +246,52 @@ const Sales: React.FC = () => {
 
             {/* Export Sales Button */}
             <button
+              onClick={() => {
+                const activeFilters: string[] = [];
+                if (searchTerm) activeFilters.push(`Search: "${searchTerm}"`);
+                if (selectedStatus && selectedStatus.length > 0) {
+                  activeFilters.push(`Status: ${selectedStatus.join(', ')}`);
+                }
+                if (selectedRank) {
+                  activeFilters.push(`Rank: ${selectedRank.from} - ${selectedRank.to}`);
+                }
+                if (selectedLeads) {
+                  activeFilters.push(`Leads: ${selectedLeads.from} - ${selectedLeads.to}`);
+                }
+                if (selectedLeadsStatus && selectedLeadsStatus.length > 0) {
+                  activeFilters.push(`Lead Status: ${selectedLeadsStatus.join(', ')}`);
+                }
+                if (selectedDealsFilter) {
+                  activeFilters.push(`Deals: ${selectedDealsFilter.from} - ${selectedDealsFilter.to}`);
+                }
+                if (selectedTarget) {
+                  activeFilters.push(`Target: ${selectedTarget.from} - ${selectedTarget.to}`);
+                }
+
+                // Filter local mock data if filters are active
+                let filtered = [...salesListItems];
+                if (searchTerm) {
+                  const lower = searchTerm.toLowerCase();
+                  filtered = filtered.filter(s => s.name.toLowerCase().includes(lower) || s.role.toLowerCase().includes(lower));
+                }
+                if (selectedStatus && selectedStatus.length > 0) {
+                  filtered = filtered.filter(s => selectedStatus.includes(s.status));
+                }
+
+                const mappedSales = filtered.map(s => ({
+                  name: s.name,
+                  phone: s.phone,
+                  role: s.role,
+                  start_date: undefined,
+                  status: s.status,
+                  leads: s.leads,
+                  deals: s.deals,
+                  revenue: s.revenue,
+                  target_progress: s.progress
+                }));
+
+                exportSalesPDF(mappedSales, activeFilters);
+              }}
               style={{
                 borderRadius: 12,
                 border: "1px solid var(--Foundation-brand-brand-500, #00236F)",
@@ -529,7 +576,6 @@ const Sales: React.FC = () => {
                   color: "#141414",
                 }}
               />
-              <img src={starsIcon} alt="stars" width={18} height={18} style={{ cursor: "pointer" }} onClick={() => setIsAISearchOpen(true)} />
             </div>
           )}
 

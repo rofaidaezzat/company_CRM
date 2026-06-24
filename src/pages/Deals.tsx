@@ -18,6 +18,7 @@ import { Sort } from '../components/Filteration/Sort';
 import Members_filter from '../components/Filteration_Manager/Members_filter';
 import { useGetDealsQuery, useUpdateDealMutation, Deal } from '../app/service/cruddeals';
 import { toast } from 'sonner';
+import { exportDealsPDF } from '../utils/exportPdf';
 
 
 
@@ -32,7 +33,68 @@ const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClos
   >
     <div onClick={(e) => e.stopPropagation()}>{children}</div>
   </div>
-);
+);const getPresetDateRange = (preset: string) => {
+  const today = new Date();
+  let start = new Date();
+  let end = new Date();
+
+  switch (preset) {
+    case "Today":
+      start = today;
+      end = today;
+      break;
+    case "Yesterday":
+      start = new Date(today);
+      start.setDate(today.getDate() - 1);
+      end = new Date(start);
+      break;
+    case "This week": {
+      const day = today.getDay();
+      start = new Date(today);
+      start.setDate(today.getDate() - day);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      break;
+    }
+    case "Last week": {
+      const day = today.getDay();
+      start = new Date(today);
+      start.setDate(today.getDate() - day - 7);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      break;
+    }
+    case "This month": {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      break;
+    }
+    case "Last month": {
+      start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      end = new Date(today.getFullYear(), today.getMonth(), 0);
+      break;
+    }
+    case "This year": {
+      start = new Date(today.getFullYear(), 0, 1);
+      end = new Date(today.getFullYear(), 11, 31);
+      break;
+    }
+    default:
+      break;
+  }
+
+  const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    startDate: formatLocalDate(start),
+    endDate: formatLocalDate(end)
+  };
+};
 
 const Deals = () => {
   const [selectedCreatedByMember, setSelectedCreatedByMember] = useState("Created by");
@@ -83,10 +145,10 @@ const Deals = () => {
     page: currentPage,
     limit: 10,
     search: debouncedSearch || undefined,
-    start_date: dateFilter?.startDate || undefined,
-    end_date: dateFilter?.endDate || undefined,
-    min_revenue: valueRange.from || undefined,
-    max_revenue: valueRange.to || undefined,
+    "close_date[gte]": dateFilter?.preset ? getPresetDateRange(dateFilter.preset).startDate : (dateFilter?.startDate || undefined),
+    "close_date[lte]": dateFilter?.preset ? getPresetDateRange(dateFilter.preset).endDate : (dateFilter?.endDate || undefined),
+    "value[gte]": valueRange.from || undefined,
+    "value[lte]": valueRange.to || undefined,
   };
 
   const { data, isLoading } = useGetDealsQuery(queryParams);
@@ -177,6 +239,14 @@ const Deals = () => {
             Add Deal
           </button>
           <button
+            onClick={() => {
+              const activeFilters: string[] = [];
+              if (debouncedSearch) activeFilters.push(`Search: "${debouncedSearch}"`);
+              if (dateFilter?.startDate) activeFilters.push(`Date: ${dateFilter.startDate} → ${dateFilter.endDate ?? ''}`);
+              if (valueRange.from || valueRange.to) activeFilters.push(`Value: ${valueRange.from ?? '0'} – ${valueRange.to ?? '∞'}`);
+              if (selectedCreatedByMember !== 'Created by') activeFilters.push(`Created by: ${selectedCreatedByMember}`);
+              exportDealsPDF(sortedDeals as any[], activeFilters);
+            }}
             style={{
               borderRadius: 12,
               border: "1px solid var(--Foundation-brand-brand-500, #00236F)",
@@ -312,14 +382,6 @@ const Deals = () => {
                   fontSize: 14,
                   color: "#141414",
                 }}
-              />
-              <img
-                src={starsIcon}
-                alt="stars"
-                width={24}
-                height={24}
-                style={{ cursor: "pointer" }}
-                onClick={() => setIsAISearchOpen(true)}
               />
             </div>
           )}
@@ -459,6 +521,10 @@ const Deals = () => {
                     setActiveFilter(null);
                     setCurrentPage(1);
                   }}
+                  initialFrom={valueRange.from}
+                  initialTo={valueRange.to}
+                  minRevenue={data?.min_revenue}
+                  maxRevenue={data?.max_revenue}
                 />
               </div>
             )}

@@ -34,6 +34,7 @@ import {
   Lead,
   useGetLeadStatsQuery
 } from '../app/service/crudleads';
+import { exportLeadsPDF } from '../utils/exportPdf';
 
 // Reusable overlay for modals
 const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
@@ -98,6 +99,69 @@ const COL_HEADERS = [
   "Next Followup",
   "Actions"
 ];
+
+const getPresetDateRange = (preset: string) => {
+  const today = new Date();
+  let start = new Date();
+  let end = new Date();
+
+  switch (preset) {
+    case "Today":
+      start = today;
+      end = today;
+      break;
+    case "Yesterday":
+      start = new Date(today);
+      start.setDate(today.getDate() - 1);
+      end = new Date(start);
+      break;
+    case "This week": {
+      const day = today.getDay();
+      start = new Date(today);
+      start.setDate(today.getDate() - day);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      break;
+    }
+    case "Last week": {
+      const day = today.getDay();
+      start = new Date(today);
+      start.setDate(today.getDate() - day - 7);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      break;
+    }
+    case "This month": {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      break;
+    }
+    case "Last month": {
+      start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      end = new Date(today.getFullYear(), today.getMonth(), 0);
+      break;
+    }
+    case "This year": {
+      start = new Date(today.getFullYear(), 0, 1);
+      end = new Date(today.getFullYear(), 11, 31);
+      break;
+    }
+    default:
+      break;
+  }
+
+  const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    startDate: formatLocalDate(start),
+    endDate: formatLocalDate(end)
+  };
+};
 
 const Leads = () => {
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
@@ -189,6 +253,11 @@ const Leads = () => {
     status: selectedStatuses.length === 1 ? (STATUS_UI_TO_API[selectedStatuses[0]] || selectedStatuses[0]) : undefined,
     priority: selectedPriorities.length === 1 ? selectedPriorities[0].toUpperCase() : undefined,
     source: selectedSources.length === 1 ? selectedSources[0].toUpperCase() : undefined,
+    start_date: dateFilter?.preset ? getPresetDateRange(dateFilter.preset).startDate : (dateFilter?.startDate || undefined),
+    end_date: dateFilter?.preset ? getPresetDateRange(dateFilter.preset).endDate : (dateFilter?.endDate || undefined),
+    next_follow_up_start: followUpFilter?.startDate || undefined,
+    next_follow_up_end: followUpFilter?.endDate || undefined,
+    next_follow_up_preset: followUpFilter?.preset || undefined,
   };
 
   const { data, isLoading, error } = useGetLeadsQuery(queryParams);
@@ -345,6 +414,16 @@ const Leads = () => {
             Add Lead
           </button>
           <button
+            onClick={() => {
+              const activeFilters: string[] = [];
+              if (debouncedSearch) activeFilters.push(`Search: "${debouncedSearch}"`);
+              if (selectedStatuses.length > 0) activeFilters.push(`Status: ${selectedStatuses.join(', ')}`);
+              if (selectedPriorities.length > 0) activeFilters.push(`Priority: ${selectedPriorities.join(', ')}`);
+              if (selectedSources.length > 0) activeFilters.push(`Source: ${selectedSources.join(', ')}`);
+              if (dateFilter?.startDate) activeFilters.push(`Date: ${dateFilter.startDate} → ${dateFilter.endDate ?? ''}`);
+              if (selectedAssignedMember !== 'Assigned to') activeFilters.push(`Assigned: ${selectedAssignedMember}`);
+              exportLeadsPDF(leadsList as any[], activeFilters);
+            }}
             style={{
               borderRadius: 12,
               border: "1px solid var(--Foundation-brand-brand-500, #00236F)",
@@ -1051,19 +1130,6 @@ const Leads = () => {
                   if (!selectedSources.includes(sourceLabel) && !selectedSources.includes(lead.source)) return false;
                 }
 
-                // 5. Date filter (created_at)
-                if (dateRange.startDate || dateRange.endDate) {
-                  if (!lead.created_at) return false;
-                  const leadTime = new Date(lead.created_at).getTime();
-                  if (dateRange.startDate) {
-                    const start = new Date(dateRange.startDate).getTime();
-                    if (leadTime < start) return false;
-                  }
-                  if (dateRange.endDate) {
-                    const end = new Date(dateRange.endDate + "T23:59:59.999Z").getTime();
-                    if (leadTime > end) return false;
-                  }
-                }
 
                 // 6. Followup filter
                 if (followupRange.startDate || followupRange.endDate || followupRange.filterType) {

@@ -5,11 +5,15 @@ interface ValueProps {
   onApply?: (values: { from: string; to: string }) => void;
   onClear?: () => void;
   onClose?: () => void;
+  initialFrom?: string;
+  initialTo?: string;
+  minRevenue?: number;
+  maxRevenue?: number;
 }
 
-const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose }) => {
-  const [fromValue, setFromValue] = useState("");
-  const [toValue, setToValue] = useState("");
+const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose, initialFrom, initialTo, minRevenue, maxRevenue }) => {
+  const [fromValue, setFromValue] = useState(initialFrom || "");
+  const [toValue, setToValue] = useState(initialTo || "");
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,19 +37,46 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose }) => {
     onApply?.({ from: fromValue, to: toValue });
   };
 
-  // Calculate widths for the fake slider just for visual representation
-  const min = 0;
-  const max = 100;
-  let fromNum = parseInt(fromValue) || 0;
-  let toNum = parseInt(toValue) || 100;
+  const hasFrom = fromValue !== "";
+  const hasTo = toValue !== "";
 
-  if (fromNum < min) fromNum = min;
-  if (toNum > max) toNum = max;
-  if (fromNum > toNum) fromNum = toNum;
+  const min = minRevenue !== undefined ? minRevenue : 0;
+  const max = maxRevenue !== undefined ? maxRevenue : 100;
 
-  const leftPercent = ((fromNum - min) / (max - min)) * 100;
-  const rightPercent = ((toNum - min) / (max - min)) * 100;
-  const activeWidth = rightPercent - leftPercent;
+  const fromNum = hasFrom ? Math.max(min, parseInt(fromValue) || 0) : min;
+  const toNum = hasTo ? Math.max(fromNum, parseInt(toValue) || 0) : max;
+
+  // Use logarithmic scale if the range spans multiple orders of magnitude (ratio > 50)
+  const useLog = min > 0 && max / min > 50;
+
+  const getPercent = (val: number) => {
+    if (max <= min) return 0;
+    if (useLog) {
+      const logMin = Math.log10(min);
+      const logMax = Math.log10(max);
+      const logVal = Math.log10(Math.max(min, val));
+      return ((logVal - logMin) / (logMax - logMin)) * 100;
+    } else {
+      return ((val - min) / (max - min)) * 100;
+    }
+  };
+
+  const leftPercent = getPercent(fromNum);
+  const rightPercent = getPercent(toNum);
+  
+  let activeLeft = 0;
+  let activeWidth = 0;
+
+  if (hasFrom && hasTo) {
+    activeLeft = leftPercent;
+    activeWidth = rightPercent - leftPercent;
+  } else if (hasFrom) {
+    activeLeft = 0;
+    activeWidth = leftPercent;
+  } else if (hasTo) {
+    activeLeft = 0;
+    activeWidth = rightPercent;
+  }
 
   return (
     <div ref={containerRef} className="filter-modal" style={styles.container}>
@@ -61,6 +92,7 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose }) => {
               className="filter-input"
               value={fromValue}
               onChange={(e) => setFromValue(e.target.value)}
+              placeholder={String(min)}
               style={styles.input}
             />
           </div>
@@ -75,6 +107,7 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose }) => {
               className="filter-input"
               value={toValue}
               onChange={(e) => setToValue(e.target.value)}
+              placeholder={String(max)}
               style={styles.input}
             />
           </div>
@@ -83,8 +116,8 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose }) => {
         {/* Range Slider Visual */}
         <div style={styles.sliderContainer}>
           <div style={styles.sliderLabels}>
-            <span style={styles.sliderLabelText}>0 EGP</span>
-            <span style={styles.sliderLabelText}>100 EGP</span>
+            <span style={styles.sliderLabelText}>{`${min.toLocaleString()} EGP`}</span>
+            <span style={styles.sliderLabelText}>{`${max.toLocaleString()} EGP`}</span>
           </div>
 
           <div style={styles.trackWrapper}>
@@ -92,24 +125,28 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose }) => {
             <div
               style={{
                 ...styles.trackActive,
-                left: `${leftPercent}%`,
+                left: `${activeLeft}%`,
                 width: `${activeWidth}%`,
               }}
             />
             {/* Left Thumb */}
-            <div
-              style={{
-                ...styles.thumb,
-                left: `calc(${leftPercent}% - 10px)`,
-              }}
-            />
+            {hasFrom && (
+              <div
+                style={{
+                  ...styles.thumb,
+                  left: `calc(${leftPercent}% - 10px)`,
+                }}
+              />
+            )}
             {/* Right Thumb */}
-            <div
-              style={{
-                ...styles.thumb,
-                left: `calc(${rightPercent}% - 10px)`,
-              }}
-            />
+            {hasTo && (
+              <div
+                style={{
+                  ...styles.thumb,
+                  left: `calc(${rightPercent}% - 10px)`,
+                }}
+              />
+            )}
           </div>
         </div>
       </div>
