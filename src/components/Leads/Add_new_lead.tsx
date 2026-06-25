@@ -97,6 +97,7 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
     companyName.trim() !== "" &&
     phoneNumber.trim() !== "" &&
     leadSource.trim() !== "" &&
+    assignTo.trim() !== "" &&
     nextFollowup.trim() !== "";
 
   const getTodayDateString = () => {
@@ -401,7 +402,9 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
 
         {/* Assign to */}
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <label style={labelStyle}>Assign to</label>
+          <label style={labelStyle}>
+            Assign to<span style={{ color: "var(--Foundation-brand-brand-500, #00236F)" }}>*</span>
+          </label>
           <div style={{ position: "relative", width: "100%" }}>
             <div
               onClick={() => setIsAssignOpen(!isAssignOpen)}
@@ -453,42 +456,6 @@ const Add_new_lead: React.FC<AddNewLeadProps> = ({ onClose, onSave }) => {
                   overflowY: "auto",
                 }}
               >
-                <div
-                  onClick={() => {
-                    setAssignTo("");
-                    setAssignName("");
-                    setIsAssignOpen(false);
-                  }}
-                  style={{
-                    padding: "12px 16px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    cursor: "pointer",
-                    background: assignTo === "" ? "rgba(245, 246, 250, 1)" : "#fff",
-                    transition: "background 0.2s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245, 246, 250, 1)")}
-                  onMouseLeave={(e) => {
-                    if (assignTo !== "") {
-                      e.currentTarget.style.background = "#fff";
-                    }
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: "50%",
-                      border: assignTo === "" ? "5px solid #00236F" : "2px solid #8B909A",
-                      boxSizing: "border-box",
-                      transition: "border 0.2s",
-                    }}
-                  />
-                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#141414" }}>
-                    Unassigned
-                  </span>
-                </div>
                 {salesMembers.map((member) => {
                   const fullName = `${member.first_name} ${member.last_name}`;
                   const isSelected = assignTo === member.id;

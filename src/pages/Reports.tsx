@@ -11,6 +11,7 @@ import Value from '../components/Filteration/Value';
 import { Sort } from '../components/Filteration/Sort';
 import { useGetReportsQuery, Report } from '../app/service/crudreports';
 import { exportReportsPDF } from '../utils/exportPdf';
+import { TableSkeleton } from '../components/TableSkeleton';
 
 
 
@@ -619,9 +620,7 @@ const Reports = () => {
         {/* Table Body */}
         <div style={{ width: "100%", background: "#fff" }}>
           {isLoading ? (
-            <div style={{ padding: 24, textAlign: "center", color: "#6B7280", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
-              Loading reports...
-            </div>
+            <TableSkeleton columnWidths={[70, 146, 100, 41, 59, 65, 60, 41, 96, 125]} rowCount={10} />
           ) : sortedReports.length === 0 ? (
             <div style={{ padding: 24, textAlign: "center", color: "#6B7280", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
               No reports found.

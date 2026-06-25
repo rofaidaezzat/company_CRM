@@ -35,6 +35,7 @@ import {
   useGetLeadStatsQuery
 } from '../app/service/crudleads';
 import { exportLeadsPDF } from '../utils/exportPdf';
+import { TableSkeleton } from '../components/TableSkeleton';
 
 // Reusable overlay for modals
 const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
@@ -163,8 +164,11 @@ const getPresetDateRange = (preset: string) => {
   };
 };
 
+const PRIORITY_OPTIONS = ["Low", "Medium", "High", "Urgent"];
+
 const Leads = () => {
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  const [openPriorityDropdown, setOpenPriorityDropdown] = useState<number | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
   
   // Filter States
@@ -305,6 +309,7 @@ const Leads = () => {
   };
 
   const dropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const priorityDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
   const actionMenuRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Close dropdown when clicking outside
@@ -316,6 +321,12 @@ const Leads = () => {
           setOpenDropdown(null);
         }
       }
+      if (openPriorityDropdown !== null) {
+        const ref = priorityDropdownRefs.current[openPriorityDropdown];
+        if (ref && !ref.contains(e.target as Node)) {
+          setOpenPriorityDropdown(null);
+        }
+      }
       if (openActionMenu !== null) {
         const ref = actionMenuRefs.current[openActionMenu];
         if (ref && !ref.contains(e.target as Node)) {
@@ -325,7 +336,7 @@ const Leads = () => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [openDropdown, openActionMenu]);
+  }, [openDropdown, openPriorityDropdown, openActionMenu]);
 
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     if (newStatus === "Deal") {
@@ -358,6 +369,24 @@ const Leads = () => {
       console.error("Failed to update status:", err);
     }
     setOpenDropdown(null);
+  };
+
+  const handlePriorityChange = async (index: number, newPriority: string) => {
+    const leadObj = leadsList[index];
+    if (!leadObj) return;
+
+    try {
+      await updateLead({
+        id: leadObj.id,
+        priority: newPriority.toUpperCase(),
+        body: {
+          priority: newPriority.toUpperCase()
+        }
+      }).unwrap();
+    } catch (err) {
+      console.error("Failed to update priority:", err);
+    }
+    setOpenPriorityDropdown(null);
   };
 
   return (
@@ -1086,9 +1115,7 @@ const Leads = () => {
         {/* Table Body */}
         <div style={{ width: "100%", background: "#fff" }}>
           {isLoading ? (
-            <div style={{ padding: 24, textAlign: "center", fontFamily: "Inter, sans-serif", color: "#6B7280" }}>
-              Loading leads...
-            </div>
+            <TableSkeleton columnWidths={[70, 146, 162, 112, 99, 58, 60, 79, 91, 132]} rowCount={10} />
           ) : error ? (
             <div style={{ padding: 24, textAlign: "center", fontFamily: "Inter, sans-serif", color: "#EF4444" }}>
               Error loading leads. Please try again.
@@ -1308,6 +1335,7 @@ const Leads = () => {
                                 borderBottom: "1px solid var(--Foundation-neutral-neutral-50, #EDEFF2)",
                                 alignSelf: "stretch",
                                 cursor: "pointer",
+                                gap: 8,
                               }}
                               onMouseEnter={(e) => {
                                 (e.currentTarget as HTMLDivElement).style.background = "rgba(237, 239, 242, 1)";
@@ -1356,33 +1384,121 @@ const Leads = () => {
                     <div style={{ width: 58, flexShrink: 0, display: "flex", alignItems: "center" }}>
                       <img src={mail04Icon} alt="Message" width={24} height={24} style={{ cursor: "pointer" }} onClick={() => setIsMessagesOpen(true)} />
                     </div>
-                    {/* Priority */}
-                    <div style={{ width: 60, flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                      <span
+                    {/* Priority with dropdown */}
+                    <div
+                      style={{ width: 60, flexShrink: 0, position: "relative" }}
+                      ref={(el) => { priorityDropdownRefs.current[index] = el; }}
+                    >
+                      <div
+                        onClick={() => setOpenPriorityDropdown(openPriorityDropdown === index ? null : index)}
                         style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: "50%",
-                          background: lead.priority === "HIGH" || lead.priority === "URGENT" ? "rgba(185, 28, 28, 1)" : lead.priority === "LOW" ? "rgba(30, 41, 59, 0.6)" : "rgba(140, 106, 4, 1)",
-                          display: "inline-block",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span
-                        style={{
-                          width: 50,
-                          height: 18,
-                          fontFamily: "Inter, sans-serif",
-                          fontWeight: 400,
-                          fontSize: 13,
-                          lineHeight: "140%",
-                          letterSpacing: "0%",
-                          color: lead.priority === "HIGH" || lead.priority === "URGENT" ? "rgba(185, 28, 28, 1)" : lead.priority === "LOW" ? "rgba(30, 41, 59, 0.6)" : "rgba(140, 106, 4, 1)",
-                          whiteSpace: "nowrap",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          cursor: "pointer",
                         }}
                       >
-                        {lead.priority ? lead.priority.charAt(0).toUpperCase() + lead.priority.slice(1).toLowerCase() : "Medium"}
-                      </span>
+                        <span
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            background: lead.priority === "HIGH" || lead.priority === "URGENT" ? "rgba(185, 28, 28, 1)" : lead.priority === "LOW" ? "rgba(30, 41, 59, 0.6)" : "rgba(140, 106, 4, 1)",
+                            display: "inline-block",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontFamily: "Inter, sans-serif",
+                            fontWeight: 400,
+                            fontSize: 13,
+                            lineHeight: "140%",
+                            color: lead.priority === "HIGH" || lead.priority === "URGENT" ? "rgba(185, 28, 28, 1)" : lead.priority === "LOW" ? "rgba(30, 41, 59, 0.6)" : "rgba(140, 106, 4, 1)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {lead.priority ? lead.priority.charAt(0).toUpperCase() + lead.priority.slice(1).toLowerCase() : "Medium"}
+                        </span>
+                      </div>
+
+                      {/* Priority Dropdown */}
+                      {openPriorityDropdown === index && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "calc(100% + 8px)",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            zIndex: 1000,
+                            borderRadius: 12,
+                            background: "var(--Foundation-neutral-white, #FFF)",
+                            boxShadow: "0 2px 4px 0 rgba(0, 0, 0, 0.17)",
+                            display: "inline-flex",
+                            flexDirection: "column",
+                            padding: 12,
+                            alignItems: "flex-start",
+                            gap: 4,
+                            minWidth: 130,
+                            border: "1px solid rgba(212, 213, 216, 1)",
+                          }}
+                        >
+                          {PRIORITY_OPTIONS.map((option) => {
+                            const isSelected = (lead.priority ? lead.priority.charAt(0).toUpperCase() + lead.priority.slice(1).toLowerCase() : "Medium") === option;
+                            return (
+                              <div
+                                key={option}
+                                onClick={() => handlePriorityChange(index, option)}
+                                style={{
+                                  display: "inline-flex",
+                                  height: 40,
+                                  padding: 8,
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  alignSelf: "stretch",
+                                  cursor: "pointer",
+                                  borderRadius: 8,
+                                  transition: "background 0.2s ease",
+                                  background: isSelected ? "var(--Foundation-brand-brand-50, #E6E9F1)" : "transparent",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = "var(--Foundation-brand-brand-50, #E6E9F1)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = isSelected ? "var(--Foundation-brand-brand-50, #E6E9F1)" : "transparent";
+                                }}
+                              >
+                                {/* Radio circle */}
+                                <div
+                                  style={{
+                                    width: 18,
+                                    height: 18,
+                                    borderRadius: "50%",
+                                    border: isSelected
+                                      ? "5px solid rgba(0, 35, 111, 1)"
+                                      : "2px solid rgba(212, 213, 216, 1)",
+                                    boxSizing: "border-box",
+                                    background: "#fff",
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                <span
+                                  style={{
+                                    fontFamily: "Inter, sans-serif",
+                                    fontSize: 14,
+                                    fontWeight: 400,
+                                    color: isSelected ? "rgba(0, 35, 111, 1)" : "rgba(70, 70, 70, 1)",
+                                    userSelect: "none",
+                                  }}
+                                >
+                                  {option}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     {/* Lead Source */}

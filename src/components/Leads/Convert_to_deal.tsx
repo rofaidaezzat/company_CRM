@@ -141,7 +141,36 @@ const Convert_to_deal: React.FC<ConvertToDealProps> = ({
   };
 
   // Backend enum only accepts CAIRO, GIZA, ALEXANDRIA
-  const cities = ["Cairo", "Giza", "Alexandria"];
+  const cities = [
+    "Cairo",
+    "Giza",
+    "Alexandria",
+    "Qalyubia",
+    "Sharqia",
+    "Gharbia",
+    "Monufia",
+    "Beheira",
+    "Dakahlia",
+    "Damietta",
+    "Port Said",
+    "Ismailia",
+    "Suez",
+    "North Sinai",
+    "South Sinai",
+    "Kafr El Sheikh",
+    "Fayoum",
+    "Beni Suef",
+    "Minya",
+    "Assiut",
+    "Sohag",
+    "Qena",
+    "Luxor",
+    "Aswan",
+    "Red Sea",
+    "New Valley",
+    "Matrouh",
+    "Other",
+  ];
 
   return (
     <div

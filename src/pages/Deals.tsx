@@ -19,6 +19,7 @@ import Members_filter from '../components/Filteration_Manager/Members_filter';
 import { useGetDealsQuery, useUpdateDealMutation, Deal } from '../app/service/cruddeals';
 import { toast } from 'sonner';
 import { exportDealsPDF } from '../utils/exportPdf';
+import { TableSkeleton } from '../components/TableSkeleton';
 
 
 
@@ -733,9 +734,7 @@ const Deals = () => {
         {/* Table Body */}
         <div style={{ width: "100%", background: "#fff" }}>
           {isLoading ? (
-            <div style={{ padding: 24, textAlign: "center", color: "#6B7280", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
-              Loading deals...
-            </div>
+            <TableSkeleton columnWidths={[70, 146, 146, 99, 99, 152, 108, 104]} rowCount={10} />
           ) : dealsList.length === 0 ? (
             <div style={{ padding: 24, textAlign: "center", color: "#6B7280", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
               No deals found.

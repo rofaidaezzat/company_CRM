@@ -1,5 +1,5 @@
 import { ArrowDownUp, ChevronDown, ChevronUp } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import filterIcon from '../assets/filter.svg';
 import starsIcon from '../assets/stars.svg';
 // Filter Components
@@ -123,6 +123,7 @@ const Sales: React.FC = () => {
 
   // Hover state for filter buttons
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
+  const filterBarRef = useRef<HTMLDivElement | null>(null);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
@@ -139,17 +140,20 @@ const Sales: React.FC = () => {
   const [selectedDealsFilter, setSelectedDealsFilter] = useState<{ from: string; to: string } | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<{ from: string; to: string } | null>(null);
 
-  // Close action menu when clicking outside
+  // Close action menu and active filters when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
+      if (activeFilter !== null && filterBarRef.current && !filterBarRef.current.contains(target)) {
+        setActiveFilter(null);
+      }
       if (openActionMenu !== null && !target.closest('.action-menu-container')) {
         setOpenActionMenu(null);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [openActionMenu]);
+  }, [activeFilter, openActionMenu]);
 
   // Get current month label e.g. "April 2026"
   const currentMonthLabel = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
@@ -488,6 +492,7 @@ const Sales: React.FC = () => {
       </div>
       {/* ── Filter Bar ── */}
       <div
+        ref={filterBarRef}
         className="filter-bar"
         style={{
           marginTop: 24,
