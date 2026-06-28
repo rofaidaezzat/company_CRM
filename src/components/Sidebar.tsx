@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Logout from "./Logout";
+import { useTranslation } from "../context/LanguageContext";
 
 interface SidebarProps {
   onNavigate?: (page: string) => void;
@@ -100,6 +101,7 @@ const NAV_ITEMS = [
 // ── Sidebar Component ─────────────────────────────────────────────────────────
 
 const Sidebar: React.FC<SidebarProps> = ({ currentPage = "overview", onNavigate }) => {
+  const { t } = useTranslation();
   const [activeItem, setActiveItem] = useState(currentPage);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
@@ -204,7 +206,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage = "overview", onNavigate 
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {item.label}
+                  {t(`sidebar.${item.id}`)}
                 </span>
               </div>
             );
@@ -261,7 +263,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage = "overview", onNavigate 
                 whiteSpace: "nowrap",
               }}
             >
-              Logout
+              {t('sidebar.logout')}
             </span>
           </div>
         </div>

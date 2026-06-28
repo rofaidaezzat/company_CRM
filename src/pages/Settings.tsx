@@ -252,7 +252,7 @@ const Settings = () => {
             marginBottom: 24,
           }}
         >
-          Settings
+          {t('sidebar.settings')}
         </div>
 
         {/* Profile */}

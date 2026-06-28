@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../../styles/filteration-mobile.css";
+import { useTranslation } from "../../context/LanguageContext";
 
 type DatePreset =
   | "Today"
@@ -52,6 +53,7 @@ const DateFilter: React.FC<DateFilterProps> = ({
   initialEndDate,
   dateCounts,
 }) => {
+  const { t } = useTranslation();
   const [selectedPreset, setSelectedPreset] = useState<DatePreset>(initialPreset || null);
   const [startDate, setStartDate] = useState(initialStartDate || "");
   const [endDate, setEndDate] = useState(initialEndDate || "");

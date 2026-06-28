@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Filter, Sparkles, ChevronDown, ChevronUp, ArrowDownUp } from 'lucide-react';
 import '../styles/tables-mobile.css';
+import { useTranslation } from "../context/LanguageContext";
 import whatsappIcon from '../assets/ic_baseline-whatsapp.svg';
 import filePlusIcon from '../assets/file-plus-01.svg';
 import editIcon from '../assets/edit-contained.svg';
@@ -167,6 +168,7 @@ const getPresetDateRange = (preset: string) => {
 const PRIORITY_OPTIONS = ["Low", "Medium", "High", "Urgent"];
 
 const Leads = () => {
+  const { t } = useTranslation();
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [openPriorityDropdown, setOpenPriorityDropdown] = useState<number | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
@@ -415,7 +417,7 @@ const Leads = () => {
             alignItems: "center",
           }}
         >
-          Leads
+          {t('sidebar.leads')}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -440,7 +442,7 @@ const Leads = () => {
             }}
           >
             <Plus size={20} color="#fff" />
-            Add Lead
+            {t('leads.addLead')}
           </button>
           <button
             onClick={() => {
@@ -473,7 +475,7 @@ const Leads = () => {
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M3.3335 16.9856C3.67075 17.315 4.12817 17.5 4.60512 17.5H15.3952C15.8722 17.5 16.3296 17.315 16.6668 16.9856M10.0012 2.5V12.4521M5.89066 8.64941L10.0012 12.4521L14.1117 8.64941" stroke="#00236F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            Export Leads
+            {t('reports.exportReport')}
           </button>
         </div>
       </div>
@@ -575,7 +577,7 @@ const Leads = () => {
               <img src={filterIcon} alt="filter" width={24} height={24} />
               <input
                 type="text"
-                placeholder="Filter by date, name,..."
+                placeholder={t('leads.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -627,7 +629,7 @@ const Leads = () => {
                 flexShrink: 0,
               }}
             >
-              Date
+              {t('leads.colDate')}
               {dateFilter ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -699,7 +701,7 @@ const Leads = () => {
                 flexShrink: 0,
               }}
             >
-              Status
+              {t('leads.colStatus')}
               {selectedStatuses.length > 0 ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -769,7 +771,7 @@ const Leads = () => {
                 flexShrink: 0,
               }}
             >
-              Priority
+              {t('leads.colPriority')}
               {selectedPriorities.length > 0 ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -839,7 +841,7 @@ const Leads = () => {
                 flexShrink: 0,
               }}
             >
-              Source
+              {t('leads.colSource')}
               {selectedSources.length > 0 ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -909,7 +911,7 @@ const Leads = () => {
                 flexShrink: 0,
               }}
             >
-              Followup
+              {t('leads.colNextFollowup')}
               {followUpFilter ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -982,7 +984,7 @@ const Leads = () => {
               whiteSpace: "nowrap",
             }}
           >
-            Reset Filters
+            {t('common.resetFilters')}
           </button>
         </div>
 
@@ -1012,7 +1014,7 @@ const Leads = () => {
                 boxSizing: "border-box",
               }}
             >
-              Sort by
+              {t('common.sortBy')}
               <ArrowDownUp size={16} color="#4B5563" />
             </button>
             {activeFilter === 'sort' && (
@@ -1089,6 +1091,18 @@ const Leads = () => {
               "Next Followup": 91,
               "Actions": 132,
             };
+            const translationMap: Record<string, string> = {
+              "Date": t("leads.colDate"),
+              "Lead info": t("leads.colCustomerInfo"),
+              "Assigned to": t("leads.colCreatedBy"),
+              "Status": t("leads.colStatus"),
+              "Phone number": t("leads.colPhoneNumber"),
+              "Message": t("leads.colMessage"),
+              "Priority": t("leads.colPriority"),
+              "Lead Source": t("leads.colSource"),
+              "Next Followup": t("leads.colNextFollowup"),
+              "Actions": t("common.actions"),
+            };
             return (
               <div
                 key={col}
@@ -1106,7 +1120,7 @@ const Leads = () => {
                   justifyContent: col === "Actions" ? "center" : "flex-start",
                 }}
               >
-                {col}
+                {translationMap[col] || col}
               </div>
             );
           })}

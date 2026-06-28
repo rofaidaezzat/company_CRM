@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../../styles/filteration-mobile.css";
+import { useTranslation } from "../../context/LanguageContext";
 
 interface ValueProps {
   onApply?: (values: { from: string; to: string }) => void;
@@ -12,9 +13,90 @@ interface ValueProps {
 }
 
 const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose, initialFrom, initialTo, minRevenue, maxRevenue }) => {
+  const { t } = useTranslation();
   const [fromValue, setFromValue] = useState(initialFrom || "");
   const [toValue, setToValue] = useState(initialTo || "");
   const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const calculateValueFromPos = (clientX: number) => {
+    if (!trackRef.current) return min;
+    const rect = trackRef.current.getBoundingClientRect();
+    const percent = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+
+    if (useLog) {
+      const logMin = Math.log10(min || 1);
+      const logMax = Math.log10(max);
+      const logVal = logMin + (percent / 100) * (logMax - logMin);
+      return Math.round(Math.pow(10, logVal));
+    } else {
+      return Math.round(min + (percent / 100) * (max - min));
+    }
+  };
+
+  const handleLeftMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const handleMouseMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+      const newVal = calculateValueFromPos(clientX);
+      const limit = hasTo ? parseInt(toValue) || max : max;
+      setFromValue(String(Math.min(limit, newVal)));
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("touchmove", handleMouseMove);
+      document.removeEventListener("touchend", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("touchmove", handleMouseMove);
+    document.addEventListener("touchend", handleMouseUp);
+  };
+
+  const handleRightMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const handleMouseMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+      const newVal = calculateValueFromPos(clientX);
+      const limit = hasFrom ? parseInt(fromValue) || min : min;
+      setToValue(String(Math.max(limit, newVal)));
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("touchmove", handleMouseMove);
+      document.removeEventListener("touchend", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("touchmove", handleMouseMove);
+    document.addEventListener("touchend", handleMouseUp);
+  };
+
+  const handleTrackClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).getAttribute('data-thumb')) return;
+
+    const clickedVal = calculateValueFromPos(e.clientX);
+
+    if (clickedVal <= fromNum) {
+      setFromValue(String(clickedVal));
+    } else if (clickedVal >= toNum) {
+      setToValue(String(clickedVal));
+    } else {
+      const distToLeft = Math.abs(clickedVal - fromNum);
+      const distToRight = Math.abs(clickedVal - toNum);
+      if (distToLeft < distToRight) {
+        setFromValue(String(clickedVal));
+      } else {
+        setToValue(String(clickedVal));
+      }
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -61,22 +143,11 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose, initialFrom, i
     }
   };
 
-  const leftPercent = getPercent(fromNum);
-  const rightPercent = getPercent(toNum);
-  
-  let activeLeft = 0;
-  let activeWidth = 0;
+  const leftPercent = Math.min(100, Math.max(0, getPercent(fromNum)));
+  const rightPercent = Math.min(100, Math.max(0, getPercent(toNum)));
 
-  if (hasFrom && hasTo) {
-    activeLeft = leftPercent;
-    activeWidth = rightPercent - leftPercent;
-  } else if (hasFrom) {
-    activeLeft = 0;
-    activeWidth = leftPercent;
-  } else if (hasTo) {
-    activeLeft = 0;
-    activeWidth = rightPercent;
-  }
+  const activeLeft = leftPercent;
+  const activeWidth = rightPercent - leftPercent;
 
   return (
     <div ref={containerRef} className="filter-modal" style={styles.container}>
@@ -86,7 +157,7 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose, initialFrom, i
         <div className="filter-split" style={styles.fromToContainer}>
           {/* From */}
           <div className="filter-split-item" style={styles.inputWrapper}>
-            <label style={styles.label}>From</label>
+            <label style={styles.label}>{t('filteration.from')}</label>
             <input
               type="number"
               className="filter-input"
@@ -101,7 +172,7 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose, initialFrom, i
 
           {/* To */}
           <div className="filter-split-item" style={styles.inputWrapper}>
-            <label style={styles.label}>To</label>
+            <label style={styles.label}>{t('filteration.to')}</label>
             <input
               type="number"
               className="filter-input"
@@ -120,7 +191,11 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose, initialFrom, i
             <span style={styles.sliderLabelText}>{`${max.toLocaleString()} EGP`}</span>
           </div>
 
-          <div style={styles.trackWrapper}>
+          <div
+            ref={trackRef}
+            onClick={handleTrackClick}
+            style={{ ...styles.trackWrapper, cursor: "pointer" }}
+          >
             <div style={styles.trackBackground} />
             <div
               style={{
@@ -130,23 +205,27 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose, initialFrom, i
               }}
             />
             {/* Left Thumb */}
-            {hasFrom && (
-              <div
-                style={{
-                  ...styles.thumb,
-                  left: `calc(${leftPercent}% - 10px)`,
-                }}
-              />
-            )}
+            <div
+              data-thumb="left"
+              onMouseDown={handleLeftMouseDown}
+              onTouchStart={handleLeftMouseDown}
+              style={{
+                ...styles.thumb,
+                left: `calc(${leftPercent}% - 10px)`,
+                cursor: "grab",
+              }}
+            />
             {/* Right Thumb */}
-            {hasTo && (
-              <div
-                style={{
-                  ...styles.thumb,
-                  left: `calc(${rightPercent}% - 10px)`,
-                }}
-              />
-            )}
+            <div
+              data-thumb="right"
+              onMouseDown={handleRightMouseDown}
+              onTouchStart={handleRightMouseDown}
+              style={{
+                ...styles.thumb,
+                left: `calc(${rightPercent}% - 10px)`,
+                cursor: "grab",
+              }}
+            />
           </div>
         </div>
       </div>
@@ -158,10 +237,10 @@ const Value: React.FC<ValueProps> = ({ onApply, onClear, onClose, initialFrom, i
       <div style={styles.buttonsRowContainer}>
         <div className="filter-buttons" style={styles.buttonsRow}>
           <button style={styles.clearButton} onClick={handleClear}>
-            Clear
+            {t('filteration.clear')}
           </button>
           <button style={styles.applyButton} onClick={handleApply}>
-            Apply
+            {t('filteration.apply')}
           </button>
         </div>
       </div>
@@ -258,6 +337,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: "20px", // enough to contain the 20px circle thumbs
     display: "flex",
     alignItems: "center",
+    touchAction: "none",
   },
   trackBackground: {
     position: "absolute",
@@ -265,6 +345,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: "8px",
     background: "rgba(246, 247, 249, 1)",
     borderRadius: "4px",
+    overflow: "hidden",
   },
   trackActive: {
     position: "absolute",
@@ -281,6 +362,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "50%",
     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
     boxSizing: "border-box",
+    touchAction: "none",
   },
   divider: {
     width: "100%",

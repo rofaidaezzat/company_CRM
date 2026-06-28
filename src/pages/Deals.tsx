@@ -3,6 +3,7 @@ import { Plus, ChevronDown, ChevronUp, ArrowDownUp } from 'lucide-react';
 import starsIcon from '../assets/stars.svg';
 import '../styles/tables-mobile.css';
 import filterIcon from '../assets/filter.svg';
+import { useTranslation } from "../context/LanguageContext";
 import whatsappIcon from '../assets/ic_baseline-whatsapp.svg';
 import mailIcon from '../assets/message-text-02 (1).svg';
 import editPenIcon from '../assets/edit-04.svg';
@@ -98,6 +99,7 @@ const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClos
 };
 
 const Deals = () => {
+  const { t } = useTranslation();
   const [selectedCreatedByMember, setSelectedCreatedByMember] = useState("Created by");
   const [activeFilter, setActiveFilter] = useState<'date' | 'value' | 'sort' | 'created_by' | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -153,6 +155,13 @@ const Deals = () => {
   };
 
   const { data, isLoading } = useGetDealsQuery(queryParams);
+
+  const statsQueryParams = {
+    limit: 1,
+    search: debouncedSearch || undefined,
+  };
+  const { data: statsData } = useGetDealsQuery(statsQueryParams);
+
   const dealsList = data?.data || [];
   const totalPages = data?.pagination?.totalPages || 1;
 
@@ -212,7 +221,7 @@ const Deals = () => {
             alignItems: "center",
           }}
         >
-          Deals
+          {t('deals.title')}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -237,7 +246,7 @@ const Deals = () => {
             }}
           >
             <Plus size={20} color="#fff" />
-            Add Deal
+            {t('deals.addDeal')}
           </button>
           <button
             onClick={() => {
@@ -268,7 +277,7 @@ const Deals = () => {
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M3.3335 16.9856C3.67075 17.315 4.12817 17.5 4.60512 17.5H15.3952C15.8722 17.5 16.3296 17.315 16.6668 16.9856M10.0012 2.5V12.4521M5.89066 8.64941L10.0012 12.4521L14.1117 8.64941" stroke="#00236F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            Export Deals
+            {t('reports.exportReport')}
           </button>
         </div>
       </div>
@@ -368,7 +377,7 @@ const Deals = () => {
               <img src={filterIcon} alt="filter" width={24} height={24} />
               <input
                 type="text"
-                placeholder="Filter by date, name,..."
+                placeholder={t('leads.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -412,7 +421,7 @@ const Deals = () => {
                 flexShrink: 0,
               }}
             >
-              Date
+              {t('leads.colDate')}
               {dateFilter ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -453,7 +462,7 @@ const Deals = () => {
                   initialPreset={dateFilter?.preset}
                   initialStartDate={dateFilter?.startDate}
                   initialEndDate={dateFilter?.endDate}
-                  dateCounts={data?.dateCounts}
+                  dateCounts={statsData?.dateCounts}
                 />
               </div>
             )}
@@ -484,7 +493,7 @@ const Deals = () => {
                 flexShrink: 0,
               }}
             >
-              Value
+              {t('modal.dealValue')}
               {(valueRange.from || valueRange.to) ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -524,8 +533,8 @@ const Deals = () => {
                   }}
                   initialFrom={valueRange.from}
                   initialTo={valueRange.to}
-                  minRevenue={data?.min_revenue}
-                  maxRevenue={data?.max_revenue}
+                  minRevenue={statsData?.min_revenue}
+                  maxRevenue={statsData?.max_revenue}
                 />
               </div>
             )}
@@ -555,7 +564,7 @@ const Deals = () => {
                 whiteSpace: "nowrap",
               }}
             >
-              <span style={{ whiteSpace: "nowrap" }}>{selectedCreatedByMember}</span>
+              <span style={{ whiteSpace: "nowrap" }}>{selectedCreatedByMember === "Created by" ? t('leads.colCreatedBy') : selectedCreatedByMember}</span>
               {selectedCreatedByMember !== "Created by" ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -617,7 +626,7 @@ const Deals = () => {
               whiteSpace: "nowrap",
             }}
           >
-            Reset Filters
+            {t('common.resetFilters')}
           </button>
         </div>
 
@@ -647,7 +656,7 @@ const Deals = () => {
                 boxSizing: "border-box",
               }}
             >
-              Sort by
+              {t('common.sortBy')}
               <ArrowDownUp size={16} color="#4B5563" />
             </button>
             {activeFilter === 'sort' && (
@@ -701,14 +710,14 @@ const Deals = () => {
           }}
         >
           {[
-            { label: "Date",          width: 70   },
-            { label: "Created by",    width: 146  },
-            { label: "Customer Info", width: 146  },
-            { label: "Phone number",  width: 99   },
-            { label: "City",          width: 99   },
-            { label: "Deal details",  width: 152  },
-            { label: "Value (EGP)",   width: 108  },
-            { label: "Actions",       width: 104  },
+            { label: t("leads.colDate"),          width: 70   },
+            { label: t("leads.colCreatedBy"),    width: 146  },
+            { label: t("leads.colCustomerInfo"), width: 146  },
+            { label: t("leads.colPhoneNumber"),  width: 99   },
+            { label: t("deals.colCity"),          width: 99   },
+            { label: t("deals.colDetails"),  width: 152  },
+            { label: t("deals.colValue"),   width: 108  },
+            { label: t("common.actions"),       width: 104  },
           ].map(({ label, width }) => (
             <div
               key={label}

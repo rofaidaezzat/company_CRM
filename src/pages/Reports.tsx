@@ -3,6 +3,7 @@ import filterIcon from '../assets/filter.svg';
 import starsIcon from '../assets/stars.svg';
 import { useState, useEffect } from 'react';
 import '../styles/tables-mobile.css';
+import { useTranslation } from "../context/LanguageContext";
 import mailIcon from '../assets/message-text-02 (1).svg';
 import Pagination from '../components/Pagination';
 import Top_Periority_notes from '../components/Reports/Top_Periority_notes';
@@ -97,6 +98,7 @@ const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClos
 };
 
 const Reports = () => {
+    const { t } = useTranslation();
     const [activeFilter, setActiveFilter] = useState<'date' | 'value' | 'sort' | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -143,6 +145,13 @@ const Reports = () => {
     };
 
     const { data, isLoading } = useGetReportsQuery(queryParams);
+
+    const statsQueryParams = {
+        limit: 1,
+        search: debouncedSearch || undefined,
+    };
+    const { data: statsData } = useGetReportsQuery(statsQueryParams);
+
     const reportsList = data?.data || [];
     const totalPages = data?.pagination?.totalPages || 1;
 
@@ -193,7 +202,7 @@ const Reports = () => {
             alignItems: "center",
           }}
         >
-          Reports
+          {t('reports.title')}
         </div>
 
         <button
@@ -224,7 +233,7 @@ const Reports = () => {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M3.3335 16.9856C3.67075 17.315 4.12817 17.5 4.60512 17.5H15.3952C15.8722 17.5 16.3296 17.315 16.6668 16.9856M10.0012 2.5V12.4521M5.89066 8.64941L10.0012 12.4521L14.1117 8.64941" stroke="#00236F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Export Report
+          {t('reports.exportReport')}
         </button>
       </div>
 
@@ -324,7 +333,7 @@ const Reports = () => {
               <img src={filterIcon} alt="filter" width={24} height={24} />
               <input
                 type="text"
-                placeholder="Filter by date, name,..."
+                placeholder={t('leads.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -368,7 +377,7 @@ const Reports = () => {
                 flexShrink: 0,
               }}
             >
-              Date
+              {t('leads.colDate')}
               {dateFilter ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -409,7 +418,7 @@ const Reports = () => {
                   initialPreset={dateFilter?.preset}
                   initialStartDate={dateFilter?.startDate}
                   initialEndDate={dateFilter?.endDate}
-                  dateCounts={data?.dateCounts}
+                  dateCounts={statsData?.dateCounts}
                 />
               </div>
             )}
@@ -440,7 +449,7 @@ const Reports = () => {
                 flexShrink: 0,
               }}
             >
-              Deals value
+              {t('modal.dealValue')}
               {(valueRange.from || valueRange.to) ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -478,6 +487,10 @@ const Reports = () => {
                     setActiveFilter(null);
                     setCurrentPage(1);
                   }}
+                  initialFrom={valueRange.from}
+                  initialTo={valueRange.to}
+                  minRevenue={statsData?.min_revenue}
+                  maxRevenue={statsData?.max_revenue}
                 />
               </div>
             )}
@@ -506,7 +519,7 @@ const Reports = () => {
               whiteSpace: "nowrap",
             }}
           >
-            Reset Filters
+            {t('common.resetFilters')}
           </button>
         </div>
 
@@ -536,7 +549,7 @@ const Reports = () => {
                 boxSizing: "border-box",
               }}
             >
-              Sort by
+              {t('common.sortBy')}
               <ArrowDownUp size={16} color="#4B5563" />
             </button>
             {activeFilter === "sort" && (
@@ -587,16 +600,16 @@ const Reports = () => {
           }}
         >
           {[
-            { label: "Date",                 width: 70 },
-            { label: "Created by",           width: 146 },
-            { label: "Role",                 width: 100 },
-            { label: "Calls",                width: 41 },
-            { label: "Contacts",             width: 59 },
-            { label: "Followups",            width: 65 },
-            { label: "Meetings",             width: 60 },
-            { label: "Deals",                width: 41 },
-            { label: "Revenue (EGP)",        width: 96 },
-            { label: "Top Priority & notes", width: 125 },
+            { label: t("leads.colDate"),                 width: 70 },
+            { label: t("leads.colCreatedBy"),           width: 146 },
+            { label: t("sales.colRole"),                 width: 100 },
+            { label: t("overview.calls"),                width: 41 },
+            { label: t("overview.leadsContacted"),             width: 59 },
+            { label: t("overview.followups"),            width: 65 },
+            { label: t("overview.meetings"),             width: 60 },
+            { label: t("overview.dealsClosed"),                width: 41 },
+            { label: t("deals.colValue"),        width: 96 },
+            { label: t("reports.colNotes"), width: 125 },
           ].map(({ label, width }) => (
             <div
               key={label}

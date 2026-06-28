@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import rightImage from '../assets/7a32fb9fa7972d76a87f5709de18f309ed2c16f1.png';
+import { useTranslation } from '../context/LanguageContext';
 
 const OTP_Verification: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const isOtpComplete = otp.every(digit => digit !== '');
@@ -114,7 +116,7 @@ const OTP_Verification: React.FC = () => {
               fontSize: "13px",
               fontWeight: 500,
               lineHeight: "normal"
-            }}>Back</span>
+            }}>{t('forgotPassword.back')}</span>
           </button>
 
           {/* Logo and Form Container */}
@@ -149,7 +151,7 @@ const OTP_Verification: React.FC = () => {
                 fontStyle: "normal",
                 fontWeight: 500,
                 lineHeight: "normal"
-              }}>OTP Verification</h1>
+              }}>{t('otp.title')}</h1>
 
               <p style={{
                 margin: 0,
@@ -161,7 +163,7 @@ const OTP_Verification: React.FC = () => {
                 lineHeight: "140%",
                 textAlign: "center"
               }}>
-                Check your Whatsapp we’ve sent you a one-time verification code.
+                {t('otp.description')}
               </p>
             </div>
 
@@ -230,7 +232,7 @@ const OTP_Verification: React.FC = () => {
                   transition: "all 0.3s ease"
                 }}
               >
-                Verify
+                {t('otp.verify')}
               </button>
 
             </form>

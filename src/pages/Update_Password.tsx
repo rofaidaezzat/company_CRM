@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import rightImage from '../assets/7a32fb9fa7972d76a87f5709de18f309ed2c16f1.png';
+import { useTranslation } from '../context/LanguageContext';
 
 const Update_Password: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -101,7 +103,7 @@ const Update_Password: React.FC = () => {
               fontSize: "13px",
               fontWeight: 500,
               lineHeight: "normal"
-            }}>Back</span>
+            }}>{t('forgotPassword.back')}</span>
           </button>
 
           {/* Logo and Form Container */}
@@ -136,7 +138,7 @@ const Update_Password: React.FC = () => {
                 fontStyle: "normal",
                 fontWeight: 500,
                 lineHeight: "normal"
-              }}>Update Password</h1>
+              }}>{t('updatePassword.title')}</h1>
 
               <p style={{
                 margin: 0,
@@ -148,7 +150,7 @@ const Update_Password: React.FC = () => {
                 lineHeight: "140%",
                 textAlign: "center"
               }}>
-                Check your Whatsapp we’ve sent you a one-time verification code.
+                {t('forgotPassword.description')}
               </p>
             </div>
 
@@ -160,7 +162,7 @@ const Update_Password: React.FC = () => {
                 
                 {/* New Password */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
-                  <label style={{ fontSize: 14, color: "var(--Foundation-neutral-neutral-950, #141414)", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>New password<span style={{ color: "#00236F" }}>*</span></label>
+                  <label style={{ fontSize: 14, color: "var(--Foundation-neutral-neutral-950, #141414)", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>{t('updatePassword.newPassword')}<span style={{ color: "#00236F" }}>*</span></label>
                   <div style={{ position: "relative", width: "100%" }}>
                     <input 
                       type={showNewPassword ? "text" : "password"} 
@@ -200,12 +202,12 @@ const Update_Password: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <span style={{ fontSize: 12, color: "var(--Foundation-neutral-neutral-800, #464646)", fontFamily: "Inter, sans-serif", marginTop: 4 }}>Must be at least 12 characters</span>
+                  <span style={{ fontSize: 12, color: "var(--Foundation-neutral-neutral-800, #464646)", fontFamily: "Inter, sans-serif", marginTop: 4 }}>{t('updatePassword.passwordMinLength')}</span>
                 </div>
 
                 {/* Confirm Password */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
-                  <label style={{ fontSize: 14, color: "var(--Foundation-neutral-neutral-950, #141414)", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>Confirm password<span style={{ color: "#00236F" }}>*</span></label>
+                  <label style={{ fontSize: 14, color: "var(--Foundation-neutral-neutral-950, #141414)", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>{t('updatePassword.confirmPassword')}<span style={{ color: "#00236F" }}>*</span></label>
                   <div style={{ position: "relative", width: "100%" }}>
                     <input 
                       type={showConfirmPassword ? "text" : "password"} 
@@ -271,7 +273,7 @@ const Update_Password: React.FC = () => {
                   transition: "all 0.3s ease"
                 }}
               >
-                Verify
+                {t('updatePassword.submit')}
               </button>
 
             </form>

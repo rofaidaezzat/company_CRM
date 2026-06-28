@@ -2,6 +2,7 @@ import { ArrowDownUp, ChevronDown, ChevronUp } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import filterIcon from '../assets/filter.svg';
 import starsIcon from '../assets/stars.svg';
+import { useTranslation } from "../context/LanguageContext";
 // Filter Components
 import DateFilter from '../components/Filteration/Date';
 import { FollowUp } from '../components/Filteration/FollowUp';
@@ -88,6 +89,7 @@ type TimeRangeTab = typeof TIME_RANGE_TABS[number];
 type ViewMode = 'grid' | 'list';
 
 const Sales: React.FC = () => {
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [activeTab, setActiveTab] = useState<'This month' | 'Last month' | 'This year'>('This month');
   const [currentPage, setCurrentPage] = useState(1);
@@ -202,7 +204,7 @@ const Sales: React.FC = () => {
             alignItems: "center",
           }}
         >
-          Sales
+          {t('sales.title')}
         </div>
 
         {/* Right: Button + View Toggle */}
@@ -245,7 +247,7 @@ const Sales: React.FC = () => {
                 <path d="M10 4.16667V15.8333" stroke="white" strokeWidth="1.67" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M4.16667 10H15.8333" stroke="white" strokeWidth="1.67" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Add New Sales
+              {t('sales.addSales')}
             </button>
 
             {/* Export Sales Button */}
@@ -316,7 +318,7 @@ const Sales: React.FC = () => {
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M3.3335 16.9856C3.67075 17.315 4.12817 17.5 4.60512 17.5H15.3952C15.8722 17.5 16.3296 17.315 16.6668 16.9856M10.0012 2.5V12.4521M5.89066 8.64941L10.0012 12.4521L14.1117 8.64941" stroke="#00236F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Export Sales
+              {t('sales.exportSales')}
             </button>
           </div>
 
@@ -568,7 +570,7 @@ const Sales: React.FC = () => {
               <img src={filterIcon} alt="filter" width={18} height={18} />
               <input
                 type="text"
-                placeholder="Filter by name, start date,..."
+                placeholder={t('leads.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
@@ -593,7 +595,7 @@ const Sales: React.FC = () => {
                 onMouseEnter={() => setHoveredFilter('rank')}
                 onMouseLeave={() => setHoveredFilter(null)}
               >
-                Rank
+                {t('sales.filterRank')}
                 {selectedRank ? (
                   <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>1</div>
                 ) : activeFilter === 'rank' ? (
@@ -621,7 +623,7 @@ const Sales: React.FC = () => {
                 onMouseEnter={() => setHoveredFilter('status_filter')}
                 onMouseLeave={() => setHoveredFilter(null)}
               >
-                Status
+                {t('leads.colStatus')}
                 {selectedStatus && selectedStatus.length > 0 ? (
                   <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>{selectedStatus.length}</div>
                 ) : activeFilter === 'status_filter' ? (
@@ -650,7 +652,7 @@ const Sales: React.FC = () => {
                 onMouseEnter={() => setHoveredFilter('leads')}
                 onMouseLeave={() => setHoveredFilter(null)}
               >
-                Leads
+                {t('sidebar.leads')}
                 {selectedLeads ? (
                   <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>1</div>
                 ) : activeFilter === 'leads' ? (
@@ -678,7 +680,7 @@ const Sales: React.FC = () => {
                 onMouseEnter={() => setHoveredFilter('leads_status')}
                 onMouseLeave={() => setHoveredFilter(null)}
               >
-                Lead's status
+                {t('sales.filterLeadsStatus')}
                 {selectedLeadsStatus.length > 0 ? (
                   <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>{selectedLeadsStatus.length}</div>
                 ) : activeFilter === 'leads_status' ? (
@@ -706,7 +708,7 @@ const Sales: React.FC = () => {
                 onMouseEnter={() => setHoveredFilter('deals')}
                 onMouseLeave={() => setHoveredFilter(null)}
               >
-                Deals
+                {t('sidebar.deals')}
                 {selectedDealsFilter ? (
                   <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>1</div>
                 ) : activeFilter === 'deals' ? (
@@ -734,7 +736,7 @@ const Sales: React.FC = () => {
                 onMouseEnter={() => setHoveredFilter('target')}
                 onMouseLeave={() => setHoveredFilter(null)}
               >
-                Target
+                {t('sales.filterTarget')}
                 {selectedTarget ? (
                   <div style={{ background: "#B0BBD2", width: 20, height: 22, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#141414", fontWeight: 600 }}>1</div>
                 ) : activeFilter === 'target' ? (
@@ -778,7 +780,7 @@ const Sales: React.FC = () => {
                 whiteSpace: "nowrap",
               }}
             >
-              Reset Filters
+              {t('common.resetFilters')}
             </button>
           </div>
         </div>
@@ -800,7 +802,7 @@ const Sales: React.FC = () => {
                 color: "#4B5563", boxSizing: "border-box",
               }}
             >
-              Sort by
+              {t('common.sortBy')}
               <ArrowDownUp size={14} color="#4B5563" />
             </button>
             {activeFilter === 'sort' && (
@@ -856,17 +858,17 @@ const Sales: React.FC = () => {
             boxSizing: "border-box",
           }}
         >
-          <div style={{ width: 32, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>Rank</div>
-          <div style={{ width: 146, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>Sales Info</div>
-          <div style={{ width: 119, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>Role</div>
-          <div style={{ width: 80, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>Start Date</div>
-          <div style={{ width: 95, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>Current Status</div>
-          <div style={{ width: 142, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--Foundation-neutral-neutral-800, #464646)", textAlign: "right" }}>Leads (not interested)</div>
-          <div style={{ width: 65, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563", textAlign: "center" }}>Deals</div>
-          <div style={{ width: 96, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563", textAlign: "right" }}>Revenue (EGP)</div>
-          <div style={{ width: 64, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563", textAlign: "right" }}>Reports</div>
-          <div style={{ width: 140, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>Target Progress</div>
-          <div style={{ width: 104, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>Actions</div>
+          <div style={{ width: 32, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('sales.filterRank')}</div>
+          <div style={{ width: 146, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('sales.colName')}</div>
+          <div style={{ width: 119, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('sales.colRole')}</div>
+          <div style={{ width: 80, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('leads.colDate')}</div>
+          <div style={{ width: 95, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('leads.colStatus')}</div>
+          <div style={{ width: 142, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--Foundation-neutral-neutral-800, #464646)", textAlign: "right" }}>{t('sidebar.leads')}</div>
+          <div style={{ width: 65, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563", textAlign: "center" }}>{t('sidebar.deals')}</div>
+          <div style={{ width: 96, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563", textAlign: "right" }}>{t('deals.colValue')}</div>
+          <div style={{ width: 64, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563", textAlign: "right" }}>{t('reports.title')}</div>
+          <div style={{ width: 140, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('sales.colProgress')}</div>
+          <div style={{ width: 104, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('common.actions')}</div>
         </div>
 
         {/* Dynamic Rows */}
