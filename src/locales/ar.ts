@@ -1,5 +1,12 @@
 export const ar = {
   modal: {
+    editProfileTitle: 'تعديل الملف الشخصي',
+    fullName: 'الاسم الكامل',
+    phoneNumber: 'رقم الهاتف',
+    uploading: 'جاري الرفع...',
+    tapToChangePhoto: 'اضغط لتغيير الصورة',
+    saveChanges: 'حفظ التغييرات',
+    profileUpdated: 'تم تحديث الملف الشخصي بنجاح.',
     editLeadTitle: 'تعديل بيانات العميل',
     forLead: 'للعميل',
     leadName: 'اسم العميل',
@@ -163,6 +170,10 @@ export const ar = {
     title: 'التقارير',
     exportReport: 'تصدير التقرير',
     colNotes: 'أهم الأولويات والملاحظات',
+    sortNewest: 'الأحدث',
+    sortOldest: 'الأقدم',
+    sortHighToLow: 'القيمة: من الأعلى إلى الأقل',
+    sortLowToHigh: 'القيمة: من الأقل إلى الأعلى',
   },
   settings: {
     profileTab: 'الملف الشخصي',

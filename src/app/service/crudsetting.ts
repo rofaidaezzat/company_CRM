@@ -88,7 +88,21 @@ export const settingsApi = createApi({
         method: 'PATCH',
         body,
       }),
-      invalidatesTags: ['Profile'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(
+            settingsApi.util.updateQueryData('getProfileDetails', undefined, (draft) => {
+              if (draft?.data?.profile && data?.data?.profile) {
+                draft.data.profile = {
+                  ...draft.data.profile,
+                  ...data.data.profile,
+                };
+              }
+            })
+          );
+        } catch {}
+      },
     }),
     changePassword: builder.mutation<GenericResponse, ChangePasswordRequest>({
       query: (body) => ({

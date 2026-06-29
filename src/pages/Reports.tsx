@@ -1,7 +1,7 @@
 import { ArrowDownUp, ChevronDown, ChevronUp } from 'lucide-react'
 import filterIcon from '../assets/filter.svg';
 import starsIcon from '../assets/stars.svg';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import '../styles/tables-mobile.css';
 import { useTranslation } from "../context/LanguageContext";
 import mailIcon from '../assets/message-text-02 (1).svg';
@@ -103,6 +103,30 @@ const Reports = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
+    const dateRef = useRef<HTMLDivElement>(null);
+    const valueRef = useRef<HTMLDivElement>(null);
+    const sortRef = useRef<HTMLDivElement>(null);
+
+    // Click outside handler for filters
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
+            if (activeFilter === "date" && dateRef.current && !dateRef.current.contains(target)) {
+                setActiveFilter(null);
+            }
+            if (activeFilter === "value" && valueRef.current && !valueRef.current.contains(target)) {
+                setActiveFilter(null);
+            }
+            if (activeFilter === "sort" && sortRef.current && !sortRef.current.contains(target)) {
+                setActiveFilter(null);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [activeFilter]);
+
     // Search state
     const [searchTerm, setSearchTerm] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -137,6 +161,11 @@ const Reports = () => {
     const queryParams = {
         page: currentPage,
         limit: 10,
+        sort: sortOption === "newest" ? "-date" 
+            : sortOption === "oldest" ? "date" 
+            : sortOption === "high-to-low" ? "-revenue_today"
+            : sortOption === "low-to-high" ? "revenue_today"
+            : undefined,
         search: debouncedSearch || undefined,
         "date[gte]": dateFilter?.preset ? getPresetDateRange(dateFilter.preset).startDate : (dateFilter?.startDate || undefined),
         "date[lte]": dateFilter?.preset ? getPresetDateRange(dateFilter.preset).endDate : (dateFilter?.endDate || undefined),
@@ -155,23 +184,26 @@ const Reports = () => {
     const reportsList = data?.data || [];
     const totalPages = data?.pagination?.totalPages || 1;
 
+    const getReportTime = (report: Report) => {
+        const d = report.date || report.created_at;
+        if (!d) return 0;
+        const time = new Date(d).getTime();
+        return isNaN(time) ? 0 : time;
+    };
+
     // Local sorting to ensure robust ordering
     const sortedReports = [...reportsList].sort((a, b) => {
         if (sortOption === "newest") {
-            return new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime();
+            return getReportTime(b) - getReportTime(a);
         }
         if (sortOption === "oldest") {
-            return new Date(a.created_at || a.date).getTime() - new Date(b.created_at || b.date).getTime();
+            return getReportTime(a) - getReportTime(b);
         }
-        if (sortOption === "a-z") {
-            const nameA = a.sales ? `${a.sales.first_name} ${a.sales.last_name}`.toLowerCase() : "";
-            const nameB = b.sales ? `${b.sales.first_name} ${b.sales.last_name}`.toLowerCase() : "";
-            return nameA.localeCompare(nameB);
+        if (sortOption === "high-to-low") {
+            return (b.revenue_today || 0) - (a.revenue_today || 0);
         }
-        if (sortOption === "z-a") {
-            const nameA = a.sales ? `${a.sales.first_name} ${a.sales.last_name}`.toLowerCase() : "";
-            const nameB = b.sales ? `${b.sales.first_name} ${b.sales.last_name}`.toLowerCase() : "";
-            return nameB.localeCompare(nameA);
+        if (sortOption === "low-to-high") {
+            return (a.revenue_today || 0) - (b.revenue_today || 0);
         }
         return 0;
     });
@@ -353,7 +385,7 @@ const Reports = () => {
           )}
 
           {/* Date */}
-          <div style={{ position: "relative" }}>
+          <div ref={dateRef} style={{ position: "relative" }}>
             <button
               onClick={() => setActiveFilter(activeFilter === "date" ? null : "date")}
               onMouseEnter={() => setHoveredFilter('date')}
@@ -425,7 +457,7 @@ const Reports = () => {
           </div>
 
           {/* Value */}
-          <div style={{ position: "relative" }}>
+          <div ref={valueRef} style={{ position: "relative" }}>
             <button
               onClick={() => setActiveFilter(activeFilter === "value" ? null : "value")}
               onMouseEnter={() => setHoveredFilter('value')}
@@ -525,7 +557,7 @@ const Reports = () => {
 
         {/* Sort by dropdown */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div className="filter-bar-right" style={{ position: "relative" }}>
+          <div ref={sortRef} className="filter-bar-right" style={{ position: "relative" }}>
             <button
               onClick={() => setActiveFilter(activeFilter === "sort" ? null : "sort")}
               onMouseEnter={() => setHoveredFilter('sort')}
@@ -558,6 +590,12 @@ const Reports = () => {
                   isOpen={true} 
                   onClose={() => setActiveFilter(null)} 
                   defaultValue={sortOption}
+                  options={[
+                    { value: 'newest', label: t('reports.sortNewest') || 'Newest' },
+                    { value: 'oldest', label: t('reports.sortOldest') || 'Oldest' },
+                    { value: 'high-to-low', label: t('reports.sortHighToLow') || 'Value: High to Low' },
+                    { value: 'low-to-high', label: t('reports.sortLowToHigh') || 'Value: Low to High' },
+                  ]}
                   onApply={(sortData) => {
                     setSortOption(sortData);
                     setActiveFilter(null);
@@ -579,7 +617,7 @@ const Reports = () => {
           display: "flex",
           flexDirection: "column",
           borderRadius: 12,
-          overflow: "hidden",
+          overflowX: "auto",
           border: "1px solid rgba(212, 213, 216, 1)",
         }}
       >
@@ -588,6 +626,7 @@ const Reports = () => {
           className="responsive-table-row"
           style={{
             width: "100%",
+            minWidth: 1160,
             height: 48,
             background: "rgba(212, 213, 216, 1)",
             display: "flex",
@@ -600,16 +639,16 @@ const Reports = () => {
           }}
         >
           {[
-            { label: t("leads.colDate"),                 width: 70 },
-            { label: t("leads.colCreatedBy"),           width: 146 },
+            { label: t("leads.colDate"),                 width: 90 },
+            { label: t("leads.colCreatedBy"),           width: 150 },
             { label: t("sales.colRole"),                 width: 100 },
-            { label: t("overview.calls"),                width: 41 },
-            { label: t("overview.leadsContacted"),             width: 59 },
-            { label: t("overview.followups"),            width: 65 },
-            { label: t("overview.meetings"),             width: 60 },
-            { label: t("overview.dealsClosed"),                width: 41 },
-            { label: t("deals.colValue"),        width: 96 },
-            { label: t("reports.colNotes"), width: 125 },
+            { label: t("overview.calls"),                width: 80 },
+            { label: t("overview.leadsContacted"),       width: 140 },
+            { label: t("overview.followups"),            width: 85 },
+            { label: t("overview.meetings"),             width: 90 },
+            { label: t("overview.dealsClosed"),          width: 110 },
+            { label: t("deals.colValue"),                width: 135 },
+            { label: t("reports.colNotes"),              width: 180 },
           ].map(({ label, width }) => (
             <div
               key={label}
@@ -633,7 +672,7 @@ const Reports = () => {
         {/* Table Body */}
         <div style={{ width: "100%", background: "#fff" }}>
           {isLoading ? (
-            <TableSkeleton columnWidths={[70, 146, 100, 41, 59, 65, 60, 41, 96, 125]} rowCount={10} />
+            <TableSkeleton columnWidths={[90, 150, 100, 80, 140, 85, 90, 110, 135, 180]} rowCount={10} />
           ) : sortedReports.length === 0 ? (
             <div style={{ padding: 24, textAlign: "center", color: "#6B7280", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
               No reports found.
@@ -655,6 +694,7 @@ const Reports = () => {
                   className="responsive-table-row"
                   style={{
                     width: "100%",
+                    minWidth: 1160,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -665,14 +705,14 @@ const Reports = () => {
                   }}
                 >
                   {/* Date */}
-                  <div style={{ width: 70, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                  <div style={{ width: 90, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
                     {formattedDate}
                   </div>
 
                   {/* Created by */}
                   <div
                     style={{
-                      width: 146,
+                      width: 150,
                       flexShrink: 0,
                       fontFamily: "Inter, sans-serif",
                       fontWeight: 400,
@@ -703,37 +743,37 @@ const Reports = () => {
                   </div>
 
                   {/* Calls */}
-                  <div style={{ width: 41, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                  <div style={{ width: 80, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
                     {report.calls_today}
                   </div>
 
                   {/* Contacts */}
-                  <div style={{ width: 59, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                  <div style={{ width: 140, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
                     {report.leads_contacted_today}
                   </div>
 
                   {/* Followups */}
-                  <div style={{ width: 65, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                  <div style={{ width: 85, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
                     {report.follow_ups_today}
                   </div>
 
                   {/* Meetings */}
-                  <div style={{ width: 60, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                  <div style={{ width: 90, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
                     {report.meetings_today}
                   </div>
 
                   {/* Deals */}
-                  <div style={{ width: 41, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                  <div style={{ width: 110, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
                     {report.deals_closed_today}
                   </div>
 
                   {/* Deals Value */}
-                  <div style={{ width: 96, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
+                  <div style={{ width: 135, flexShrink: 0, fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 13, lineHeight: "140%", letterSpacing: 0, color: "#4B5563" }}>
                     {report.revenue_today ? report.revenue_today.toLocaleString() : "0"}
                   </div>
 
                   {/* Top Priority & notes */}
-                  <div style={{ width: 125, flexShrink: 0, display: "flex", alignItems: "center" }}>
+                  <div style={{ width: 180, flexShrink: 0, display: "flex", alignItems: "center" }}>
                     <img src={mailIcon} alt="Email" width={24} height={24} style={{ cursor: "pointer" }} onClick={() => setSelectedReport(report)} />
                   </div>
                 </div>

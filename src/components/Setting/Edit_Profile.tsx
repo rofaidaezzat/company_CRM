@@ -8,6 +8,7 @@ import {
   useUploadProfilePictureMutation,
 } from "../../app/service/crudsetting";
 import { toast } from "sonner";
+import { useTranslation } from "../../context/LanguageContext";
 
 interface EditProfileProps {
   onClose?: () => void;
@@ -38,14 +39,14 @@ const labelStyle: React.CSSProperties = {
 };
 
 const Edit_Profile: React.FC<EditProfileProps> = ({ onClose }) => {
+  const { t } = useTranslation();
   const { data: profileData, isLoading: isProfileLoading } = useGetProfileDetailsQuery();
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileInfoMutation();
   const [uploadPhoto, { isLoading: isUploading }] = useUploadProfilePictureMutation();
 
   const profile = profileData?.data?.profile;
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -54,8 +55,9 @@ const Edit_Profile: React.FC<EditProfileProps> = ({ onClose }) => {
   // Populate fields once profile loads
   useEffect(() => {
     if (profile) {
-      setFirstName(profile.first_name || "");
-      setLastName(profile.last_name || "");
+      const first = profile.first_name || "";
+      const last = profile.last_name || "";
+      setFullName(`${first} ${last}`.trim());
       setPhone(profile.phone || "");
       setAvatarPreview(profile.avatar || null);
     }
@@ -71,10 +73,14 @@ const Edit_Profile: React.FC<EditProfileProps> = ({ onClose }) => {
   };
 
   const handleSave = async () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      toast.error("First name and last name are required.");
+    if (!fullName.trim()) {
+      toast.error("Full name is required.");
       return;
     }
+    const parts = fullName.trim().split(/\s+/);
+    const first_name = parts[0] || "";
+    const last_name = parts.slice(1).join(" ") || "";
+
     try {
       // Upload photo first if changed
       if (pendingFile) {
@@ -84,10 +90,10 @@ const Edit_Profile: React.FC<EditProfileProps> = ({ onClose }) => {
       }
       // Update profile info
       await updateProfile({
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
+        first_name: first_name.trim(),
+        last_name: last_name.trim(),
       }).unwrap();
-      toast.success("Profile updated successfully.");
+      toast.success(t('modal.profileUpdated') || "Profile updated successfully.");
       onClose?.();
     } catch (err: any) {
       const msg =
@@ -105,7 +111,19 @@ const Edit_Profile: React.FC<EditProfileProps> = ({ onClose }) => {
     e.currentTarget.style.borderColor = "rgba(212, 213, 216, 1)";
   };
 
-  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "?";
+  const getInitials = (first: string = '', last: string = '') => {
+    const f = first?.[0] || '';
+    const l = last?.[0] || '';
+    return (f + l).toUpperCase() || '?';
+  };
+
+  const getInitialsFromFullName = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    const first = parts[0] || '';
+    const last = parts.slice(1).join(' ') || '';
+    return getInitials(first, last);
+  };
+
   const isBusy = isUpdating || isUploading;
 
   return (
@@ -139,17 +157,30 @@ const Edit_Profile: React.FC<EditProfileProps> = ({ onClose }) => {
           flexShrink: 0,
         }}
       >
-        <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: 16, color: "#141414" }}>
-          Edit Profile
+        <span
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontWeight: 700,
+            fontSize: 16,
+            color: "#141414",
+          }}
+        >
+          {t('modal.editProfileTitle')}
         </span>
         <button
           onClick={onClose}
           aria-label="Close"
           style={{
-            width: 32, height: 32, borderRadius: "50%",
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
             border: "1px solid rgba(212, 213, 216, 1)",
-            background: "#fff", display: "flex", alignItems: "center",
-            justifyContent: "center", cursor: "pointer", flexShrink: 0,
+            background: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            flexShrink: 0,
           }}
         >
           <img src={closeIcon} alt="Close" width={14} height={14} />
@@ -160,132 +191,165 @@ const Edit_Profile: React.FC<EditProfileProps> = ({ onClose }) => {
       <div
         className="leads-modal-body"
         style={{
-          width: 462, flex: 1,
+          width: 462,
+          flex: 1,
           background: "rgba(245, 246, 250, 1)",
           padding: "24px 20px",
           boxSizing: "border-box",
-          display: "flex", flexDirection: "column",
-          gap: 20, overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 20,
+          overflowY: "auto",
         }}
       >
         {isProfileLoading ? (
           <div style={{ textAlign: "center", color: "#6B7280", fontFamily: "Inter, sans-serif", paddingTop: 40 }}>
-            Loading profile...
+            {t('common.loading') || "Loading profile..."}
           </div>
         ) : (
           <>
             {/* Avatar Section */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
               <div style={{ position: "relative" }}>
-                {avatarPreview ? (
-                  <img
-                    src={avatarPreview}
-                    alt="Avatar"
-                    style={{ width: 80, height: 80, borderRadius: 16, objectFit: "cover" }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 80, height: 80, borderRadius: 16,
-                      background: "#8FA0C0", display: "flex",
-                      alignItems: "center", justifyContent: "center",
-                      color: "#fff", fontFamily: "Inter, sans-serif",
-                      fontWeight: 700, fontSize: 28,
-                    }}
-                  >
-                    {initials}
-                  </div>
-                )}
+                {/* Hidden File Input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/png, image/jpeg, image/jpg, image/webp"
+                  style={{ display: "none" }}
+                />
+                {/* Avatar Box */}
+                <div
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 16,
+                    background: "#8FA0C0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                    fontFamily: "Inter, sans-serif",
+                    fontWeight: 700,
+                    fontSize: 28,
+                    overflow: "hidden",
+                  }}
+                >
+                  {isUploading ? (
+                    <span style={{ fontSize: 14 }}>...</span>
+                  ) : avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    getInitialsFromFullName(fullName)
+                  )}
+                </div>
+                {/* Camera Icon Badge */}
                 <div
                   onClick={handlePhotoClick}
                   style={{
-                    position: "absolute", bottom: -4, right: -4,
-                    width: 28, height: 28, borderRadius: "50%",
+                    position: "absolute",
+                    bottom: -4,
+                    right: -4,
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
                     background: "rgba(0, 35, 111, 1)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", border: "2px solid #fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    border: "2px solid #fff",
                   }}
                 >
                   <img src={cameraIcon} alt="Change Photo" width={16} height={16} />
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={handleFileChange}
-                />
               </div>
               <span
                 onClick={handlePhotoClick}
-                style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#6B7280", cursor: "pointer" }}
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  color: "#6B7280",
+                  cursor: "pointer",
+                }}
               >
-                Tap to change photo
+                {isUploading ? t('modal.uploading') : t('modal.tapToChangePhoto')}
               </span>
             </div>
 
             {/* Form Fields */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 8 }}>
               <div>
-                <label style={labelStyle}>First name<span style={{ color: "#00236F" }}>*</span></label>
+                <label style={labelStyle}>
+                  {t('modal.fullName')}<span style={{ color: "#00236F" }}>*</span>
+                </label>
                 <input
                   type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   style={inputStyle}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                 />
               </div>
               <div>
-                <label style={labelStyle}>Last name<span style={{ color: "#00236F" }}>*</span></label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  style={inputStyle}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Phone number</label>
+                <label style={labelStyle}>
+                  {t('modal.phoneNumber')}<span style={{ color: "#00236F" }}>*</span>
+                </label>
                 <input
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  style={{ ...inputStyle, background: "rgba(212,213,216,0.3)", cursor: "default" }}
-                  readOnly
+                  readOnly={true}
+                  style={{ ...inputStyle, background: "#EDEFF2", cursor: "not-allowed" }}
                 />
               </div>
             </div>
 
             {/* Actions */}
-            <div style={{ marginTop: "auto", display: "flex", gap: 12 }}>
+            <div
+              style={{
+                marginTop: "auto",
+                display: "flex",
+                gap: 12,
+              }}
+            >
               <button
                 onClick={onClose}
                 style={{
-                  flex: 1, height: 48, borderRadius: 12,
+                  flex: 1,
+                  height: 48,
+                  borderRadius: 12,
                   border: "1px solid rgba(212, 213, 216, 1)",
-                  background: "transparent", color: "#141414",
-                  fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 15,
-                  cursor: "pointer", transition: "background 0.2s",
+                  background: "transparent",
+                  color: "#141414",
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: 600,
+                  fontSize: 15,
+                  cursor: "pointer",
+                  transition: "background 0.2s",
                 }}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 disabled={isBusy}
                 style={{
-                  flex: 1, height: 48, borderRadius: 12, border: "none",
-                  background: isBusy ? "rgba(212,213,216,1)" : "rgba(0, 35, 111, 1)",
+                  flex: 1,
+                  height: 48,
+                  borderRadius: 12,
+                  border: "none",
+                  background: isBusy ? "rgba(212, 213, 216, 1)" : "rgba(0, 35, 111, 1)",
                   color: isBusy ? "#9CA3AF" : "#fff",
-                  fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 15,
-                  cursor: isBusy ? "not-allowed" : "pointer", transition: "background 0.2s",
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: 600,
+                  fontSize: 15,
+                  cursor: isBusy ? "not-allowed" : "pointer",
+                  transition: "background 0.2s",
                 }}
               >
-                {isBusy ? "Saving..." : "Save Changes"}
+                {isBusy ? (t('modal.saving') || "Saving...") : (t('modal.saveChanges') || "Save Changes")}
               </button>
             </div>
           </>

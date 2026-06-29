@@ -6,7 +6,7 @@ interface SortOption {
   label: string;
 }
 
-const sortOptions: SortOption[] = [
+const sortOptionsDefault: SortOption[] = [
   { value: 'newest', label: 'Newest' },
   { value: 'oldest', label: 'Oldest' },
   { value: 'a-z', label: 'A to Z' },
@@ -17,6 +17,7 @@ interface SortProps {
   onClose: () => void;
   onApply: (selectedValue: string) => void;
   defaultValue?: string;
+  options?: SortOption[];
 }
 
 export const Sort: React.FC<SortProps> = ({
@@ -24,7 +25,9 @@ export const Sort: React.FC<SortProps> = ({
   onClose,
   onApply,
   defaultValue = 'newest',
+  options,
 }) => {
+  const currentOptions = options || sortOptionsDefault;
   const [selected, setSelected] = useState(defaultValue);
 
   const handleApply = () => {
@@ -33,7 +36,9 @@ export const Sort: React.FC<SortProps> = ({
   };
 
   const handleClear = () => {
-    setSelected(defaultValue);
+    setSelected('newest');
+    onApply('newest');
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -42,7 +47,7 @@ export const Sort: React.FC<SortProps> = ({
     <div className="filter-modal" style={styles.container}>
       {/* Radio Options */}
       <div className="filter-list" style={styles.optionsList}>
-        {sortOptions.map((option) => (
+        {currentOptions.map((option) => (
           <label key={option.value} className="filter-checkbox-row" style={styles.radioRow}>
             <input
               type="radio"

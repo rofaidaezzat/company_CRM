@@ -1,5 +1,12 @@
 export const en = {
   modal: {
+    editProfileTitle: 'Edit Profile',
+    fullName: 'Full name',
+    phoneNumber: 'Phone number',
+    uploading: 'Uploading...',
+    tapToChangePhoto: 'Tap to change photo',
+    saveChanges: 'Save Changes',
+    profileUpdated: 'Profile updated successfully.',
     editLeadTitle: 'Edit Lead Info',
     forLead: 'for',
     leadName: 'Lead name',
@@ -163,6 +170,10 @@ export const en = {
     title: 'Reports',
     exportReport: 'Export Report',
     colNotes: 'Top Priority & notes',
+    sortNewest: 'Newest',
+    sortOldest: 'Oldest',
+    sortHighToLow: 'Value: High to Low',
+    sortLowToHigh: 'Value: Low to High',
   },
   settings: {
     profileTab: 'Profile',
