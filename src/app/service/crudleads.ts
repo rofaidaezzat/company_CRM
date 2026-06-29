@@ -18,6 +18,8 @@ export interface Lead {
   company_name: string | null;
   source: string;
   status: string;
+  priority?: string | null;
+  service_details?: string | null;
   next_follow_up: string | null;
   metadata: any | null;
   created_at: string;
@@ -73,6 +75,7 @@ export interface UpdateLeadRequest {
     value?: string;
     city?: string;
     priority?: string;
+    service_details?: string;
   };
 }
 

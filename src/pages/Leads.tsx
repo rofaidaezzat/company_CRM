@@ -1545,7 +1545,7 @@ const Leads = () => {
                     </div>
 
                     {/* Actions */}
-                    <div style={{ width: 132, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, position: "relative" }} ref={(el) => (actionMenuRefs.current[index] = el)}>
+                    <div style={{ width: 132, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, position: "relative" }} ref={(el) => { actionMenuRefs.current[index] = el; }}>
                       {/* Call Icon */}
                       <svg 
                         xmlns="http://www.w3.org/2000/svg" 
