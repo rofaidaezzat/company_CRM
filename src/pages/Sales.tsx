@@ -107,14 +107,15 @@ const Sales: React.FC = () => {
   };
 
   const [salesListItems, setSalesListItems] = useState([
-    { id: 1, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30 },
-    { id: 2, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30 },
-    { id: 3, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30 },
-    { id: 4, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30 },
-    { id: 5, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30 },
-    { id: 6, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30 },
-    { id: 7, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30 },
+    { id: 1, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30, manager: "Mohammed Abdellah" },
+    { id: 2, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30, manager: "Mohammed Abdellah" },
+    { id: 3, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30, manager: "Mohammed Abdellah" },
+    { id: 4, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30, manager: "Mohammed Abdellah" },
+    { id: 5, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30, manager: "Mohammed Abdellah" },
+    { id: 6, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30, manager: "Mohammed Abdellah" },
+    { id: 7, name: "Yasser Abdelhameed", phone: "********6535", role: "Sales manager", targetAdj: "Allow", status: "Inactive", lastActive: "2h ago", leads: 888, deals: 444, revenue: "30,000", reports: 20, progress: 30, manager: "Mohammed Abdellah" },
   ]);
+  const [openManagerDropdown, setOpenManagerDropdown] = useState<number | null>(null);
   const [isEditSalesRoleOpen, setIsEditSalesRoleOpen] = useState(false);
   const [editingSalesId, setEditingSalesId] = useState<number | null>(null);
   const [isViewInfoOpen, setIsViewInfoOpen] = useState(false);
@@ -862,12 +863,30 @@ const Sales: React.FC = () => {
           <div style={{ width: 146, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('sales.colName')}</div>
           <div style={{ width: 119, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('sales.colRole')}</div>
           <div style={{ width: 80, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('leads.colDate')}</div>
-          <div style={{ width: 95, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('leads.colStatus')}</div>
-          <div style={{ width: 142, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--Foundation-neutral-neutral-800, #464646)", textAlign: "right" }}>{t('sidebar.leads')}</div>
+          <div style={{ width: 150, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>Manager</div>
+          <div style={{ width: 95, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>Current Status</div>
+          <div style={{
+            width: 101,
+            height: 32,
+            flexShrink: 0,
+            fontFamily: "Inter, sans-serif",
+            fontSize: 12,
+            fontWeight: 700,
+            color: "var(--Foundation-neutral-neutral-800, #464646)",
+            textAlign: "right",
+            lineHeight: "120%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            boxSizing: "border-box",
+            opacity: 1
+          }}>
+            <div>Leads</div>
+            <div style={{ fontSize: 10, fontWeight: 500, opacity: 0.85 }}>(not interested)</div>
+          </div>
           <div style={{ width: 65, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563", textAlign: "center" }}>{t('sidebar.deals')}</div>
-          <div style={{ width: 96, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563", textAlign: "right" }}>{t('deals.colValue')}</div>
+          <div style={{ width: 96, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563", textAlign: "right" }}>Revenue (EGP)</div>
           <div style={{ width: 64, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563", textAlign: "right" }}>{t('reports.title')}</div>
-          <div style={{ width: 140, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('sales.colProgress')}</div>
           <div style={{ width: 104, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "#4B5563" }}>{t('common.actions')}</div>
         </div>
 
@@ -932,13 +951,68 @@ const Sales: React.FC = () => {
             <div style={{ width: 80, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, color: "#4B5563" }}>
               24/05/2026
             </div>
+            {/* Manager Dropdown */}
+            <div style={{ width: 150, flexShrink: 0, position: "relative", boxSizing: "border-box" }}>
+              <div 
+                onClick={() => setOpenManagerDropdown(openManagerDropdown === index ? null : index)}
+                style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
+              >
+                <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#4B5563" }}>
+                  {item.manager}
+                </span>
+                <ChevronDown size={16} color="#4B5563" />
+              </div>
+              {openManagerDropdown === index && (
+                <div style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  zIndex: 1000,
+                  background: "#fff",
+                  border: "1px solid #D4D5D8",
+                  borderRadius: 8,
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.17)",
+                  display: "flex",
+                  flexDirection: "column",
+                  width: 170,
+                  boxSizing: "border-box",
+                  marginTop: 4,
+                  overflow: "hidden"
+                }}>
+                  {["Mohammed Abdellah", "Mohammed Gammal", "Mahmoud Abdelmawgoud", "Rowayda Ashraf"].map((mgr) => (
+                    <div
+                      key={mgr}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const updated = [...salesListItems];
+                        updated[index].manager = mgr;
+                        setSalesListItems(updated);
+                        setOpenManagerDropdown(null);
+                      }}
+                      style={{
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                        fontSize: 13,
+                        fontFamily: "Inter, sans-serif",
+                        background: item.manager === mgr ? "#F3F4F6" : "transparent",
+                        color: "#141414"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#F9FAFB"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = item.manager === mgr ? "#F3F4F6" : "transparent"}
+                    >
+                      {mgr}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             {/* Current Status */}
             <div style={{ width: 95, flexShrink: 0, display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#4B5563" }}>Inactive</span>
               <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "#9CA3AF" }}>2h ago</span>
             </div>
             {/* Leads */}
-            <div style={{ width: 142, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, color: "#4B5563", textAlign: "right" }}>
+            <div style={{ width: 101, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, color: "#4B5563", textAlign: "right" }}>
               888
             </div>
             {/* Deals */}
@@ -952,13 +1026,6 @@ const Sales: React.FC = () => {
             {/* Reports */}
             <div style={{ width: 64, flexShrink: 0, fontFamily: "Inter, sans-serif", fontSize: 13, color: "#4B5563", textAlign: "right" }}>
               20
-            </div>
-            {/* Target Progress */}
-            <div style={{ width: 140, flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 80, height: 8, borderRadius: 4, background: "#E5E7EB", position: "relative" }}>
-                <div style={{ width: "30%", height: "100%", borderRadius: 4, background: "#00236F" }} />
-              </div>
-              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "#4B5563" }}>30%</span>
             </div>
             {/* Actions */}
             <div className="action-menu-container" style={{ width: 104, flexShrink: 0, display: "flex", alignItems: "center", gap: 12, position: "relative" }}>

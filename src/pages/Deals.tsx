@@ -17,6 +17,7 @@ import Value from '../components/Filteration/Value';
 import DateFilter from '../components/Filteration/Date';
 import { Sort } from '../components/Filteration/Sort';
 import Members_filter from '../components/Filteration_Manager/Members_filter';
+import Created_By_Deal from '../components/Filteration/Created_By_Deal';
 import { useGetDealsQuery, useUpdateDealMutation, Deal } from '../app/service/cruddeals';
 import { toast } from 'sonner';
 import { exportDealsPDF } from '../utils/exportPdf';
@@ -100,7 +101,7 @@ const ModalOverlay = ({ children, onClose }: { children: React.ReactNode; onClos
 
 const Deals = () => {
   const { t } = useTranslation();
-  const [selectedCreatedByMember, setSelectedCreatedByMember] = useState("Created by");
+  const [selectedCreatedByMembers, setSelectedCreatedByMembers] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState<'date' | 'value' | 'sort' | 'created_by' | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddDealOpen, setIsAddDealOpen] = useState(false);
@@ -554,7 +555,7 @@ const Deals = () => {
                 padding: "0 12px",
                 height: 40,
                 gap: 8,
-                background: (hoveredFilter === 'created_by' || selectedCreatedByMember !== "Created by" || activeFilter === 'created_by') ? "#E6E9F1" : "transparent",
+                background: (hoveredFilter === 'created_by' || selectedCreatedByMembers.length > 0 || activeFilter === 'created_by') ? "#E6E9F1" : "transparent",
                 cursor: "pointer",
                 fontFamily: "Inter, sans-serif",
                 fontSize: 14,
@@ -564,8 +565,8 @@ const Deals = () => {
                 whiteSpace: "nowrap",
               }}
             >
-              <span style={{ whiteSpace: "nowrap" }}>{selectedCreatedByMember === "Created by" ? t('leads.colCreatedBy') : selectedCreatedByMember}</span>
-              {selectedCreatedByMember !== "Created by" ? (
+              <span style={{ whiteSpace: "nowrap" }}>{t('leads.colCreatedBy')}</span>
+              {selectedCreatedByMembers.length > 0 ? (
                 <div style={{
                   background: "#B0BBD2",
                   width: 20,
@@ -580,7 +581,7 @@ const Deals = () => {
                   color: "#141414",
                   fontWeight: 600,
                 }}>
-                  1
+                  {selectedCreatedByMembers.length}
                 </div>
               ) : activeFilter === 'created_by' ? (
                 <ChevronUp size={16} color="#4B5563" style={{ flexShrink: 0 }} />
@@ -590,13 +591,19 @@ const Deals = () => {
             </button>
             {activeFilter === 'created_by' && (
               <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 500, marginTop: 4 }}>
-                <Members_filter
-                  selectedOption={selectedCreatedByMember === "Created by" ? "All members" : selectedCreatedByMember}
-                  onChange={(option) => {
-                    setSelectedCreatedByMember(option === "All members" ? "Created by" : option);
+                <Created_By_Deal
+                  initialSelected={selectedCreatedByMembers}
+                  onApply={(selected) => {
+                    setSelectedCreatedByMembers(selected);
                     setActiveFilter(null);
+                    setCurrentPage(1);
                   }}
-                  onClickOutside={() => setActiveFilter(null)}
+                  onClear={() => {
+                    setSelectedCreatedByMembers([]);
+                    setActiveFilter(null);
+                    setCurrentPage(1);
+                  }}
+                  onClose={() => setActiveFilter(null)}
                 />
               </div>
             )}
@@ -607,7 +614,7 @@ const Deals = () => {
             onClick={() => {
               setDateFilter(null);
               setValueRange({});
-              setSelectedCreatedByMember("Created by");
+              setSelectedCreatedByMembers([]);
               setSearchTerm("");
               setCurrentPage(1);
               setActiveFilter(null);
@@ -751,9 +758,9 @@ const Deals = () => {
           ) : (
             sortedDeals
               .filter((deal) => {
-                if (selectedCreatedByMember !== "Created by") {
+                if (selectedCreatedByMembers.length > 0) {
                   const authorName = deal.author ? `${deal.author.first_name} ${deal.author.last_name}` : "System";
-                  return authorName.toLowerCase().includes(selectedCreatedByMember.toLowerCase().replace("created by", "").trim());
+                  if (!selectedCreatedByMembers.includes(authorName)) return false;
                 }
                 return true;
               })

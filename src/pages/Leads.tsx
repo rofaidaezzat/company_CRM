@@ -20,6 +20,9 @@ import Notes from '../components/Deals/Notes';
 import Leads_messages from '../components/Leads/Leads_messages';
 import StatusTimeline from '../components/Leads/StatusTimeline';
 import Delete_Lead from '../components/Leads/Delete_Lead';
+import Createdby from '../components/Leads/Createdby';
+import { useGetSalesMembersQuery } from '../app/service/crudsales';
+import { toast } from 'sonner';
 // Filter Components
 import DateFilter from '../components/Filteration/Date';
 import { FollowUp } from '../components/Filteration/FollowUp';
@@ -28,6 +31,7 @@ import Source from '../components/Filteration/Source';
 import Status from '../components/Filteration/Status';
 import Priority from '../components/Filteration/Priority';
 import Members_filter from '../components/Filteration_Manager/Members_filter';
+import Assign_to from '../components/Filteration/Assign_to';
 import {
   useGetLeadsQuery,
   useDeleteLeadMutation,
@@ -98,7 +102,7 @@ const COL_HEADERS = [
   "Message",
   "Priority",
   "Lead Source",
-  "Next Followup",
+  "Followup",
   "Actions"
 ];
 
@@ -172,7 +176,7 @@ const Leads = () => {
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [openPriorityDropdown, setOpenPriorityDropdown] = useState<number | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
-  
+
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -195,14 +199,14 @@ const Leads = () => {
     endDate: followUpFilter?.endDate
   };
   const sortOption = sortQuery === "created_at" ? "oldest" :
-                     sortQuery === "-created_at" ? "newest" :
-                     sortQuery === "name" ? "a-z" :
-                     sortQuery === "-name" ? "z-a" : "newest";
+    sortQuery === "-created_at" ? "newest" :
+      sortQuery === "name" ? "a-z" :
+        sortQuery === "-name" ? "z-a" : "newest";
 
   // Filter Dropdowns & Modals
   type ActiveFilter = 'date' | 'status' | 'source' | 'followup' | 'sort' | 'priority' | 'assigned' | null;
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>(null);
-  const [selectedAssignedMember, setSelectedAssignedMember] = useState("Assigned to");
+  const [selectedAssignedMembers, setSelectedAssignedMembers] = useState<string[]>([]);
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
 
   // AI Search states
@@ -220,7 +224,8 @@ const Leads = () => {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isStatusTimelineOpen, setIsStatusTimelineOpen] = useState(false);
-  
+  const [openCreatedbyDropdown, setOpenCreatedbyDropdown] = useState<number | null>(null);
+
   // Selected Lead state for edits, deletions, conversions
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
@@ -267,6 +272,8 @@ const Leads = () => {
   };
 
   const { data, isLoading, error } = useGetLeadsQuery(queryParams);
+  const { data: salesMembersResponse } = useGetSalesMembersQuery();
+  const salesMembersList = salesMembersResponse?.data || [];
   const leadsList = data?.data || [];
   const totalPages = data?.pagination?.totalPages || 1;
 
@@ -473,7 +480,7 @@ const Leads = () => {
             }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M3.3335 16.9856C3.67075 17.315 4.12817 17.5 4.60512 17.5H15.3952C15.8722 17.5 16.3296 17.315 16.6668 16.9856M10.0012 2.5V12.4521M5.89066 8.64941L10.0012 12.4521L14.1117 8.64941" stroke="#00236F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M3.3335 16.9856C3.67075 17.315 4.12817 17.5 4.60512 17.5H15.3952C15.8722 17.5 16.3296 17.315 16.6668 16.9856M10.0012 2.5V12.4521M5.89066 8.64941L10.0012 12.4521L14.1117 8.64941" stroke="#00236F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             {t('reports.exportReport')}
           </button>
@@ -552,8 +559,8 @@ const Leads = () => {
                 fill="none"
                 style={{ cursor: "pointer", flexShrink: 0 }}
               >
-                <path d="M12.4235 0L14.2538 4.94621L19.2 6.77647L14.2538 8.60673L12.4235 13.5529L10.5933 8.60673L5.64706 6.77647L10.5933 4.94621L12.4235 0Z" fill="var(--Foundation-brand-brand-500, #00236F)"/>
-                <path d="M3.95294 11.2941L5.55177 13.6482L7.90588 15.2471L5.55177 16.8459L3.95294 19.2L2.35411 16.8459L0 15.2471L2.35411 13.6482L3.95294 11.2941Z" fill="var(--Foundation-brand-brand-500, #00236F)"/>
+                <path d="M12.4235 0L14.2538 4.94621L19.2 6.77647L14.2538 8.60673L12.4235 13.5529L10.5933 8.60673L5.64706 6.77647L10.5933 4.94621L12.4235 0Z" fill="var(--Foundation-brand-brand-500, #00236F)" />
+                <path d="M3.95294 11.2941L5.55177 13.6482L7.90588 15.2471L5.55177 16.8459L3.95294 19.2L2.35411 16.8459L0 15.2471L2.35411 13.6482L3.95294 11.2941Z" fill="var(--Foundation-brand-brand-500, #00236F)" />
               </svg>
             </div>
           ) : (
@@ -911,7 +918,7 @@ const Leads = () => {
                 flexShrink: 0,
               }}
             >
-              {t('leads.colNextFollowup')}
+              Followup
               {followUpFilter ? (
                 <div style={{
                   background: "#B0BBD2",
@@ -959,6 +966,75 @@ const Leads = () => {
             )}
           </div>
 
+          {/* Assigned to */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setActiveFilter(activeFilter === 'assigned' ? null : 'assigned')}
+              onMouseEnter={() => setHoveredFilter('assigned')}
+              onMouseLeave={() => setHoveredFilter(null)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid #D4D5D8",
+                borderRadius: 12,
+                padding: "0 12px",
+                height: 40,
+                minWidth: 88,
+                gap: 8,
+                background: (hoveredFilter === 'assigned' || selectedAssignedMembers.length > 0 || activeFilter === 'assigned') ? "#E6E9F1" : "transparent",
+                cursor: "pointer",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 14,
+                color: "#4B5563",
+                boxSizing: "border-box",
+                flexShrink: 0,
+              }}
+            >
+              Assigned to
+              {selectedAssignedMembers.length > 0 ? (
+                <div style={{
+                  background: "#B0BBD2",
+                  width: 20,
+                  height: 22,
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 2,
+                  boxSizing: "border-box",
+                  fontSize: 11,
+                  color: "#141414",
+                  fontWeight: 600,
+                }}>
+                  {selectedAssignedMembers.length}
+                </div>
+              ) : activeFilter === 'assigned' ? (
+                <ChevronUp size={16} color="#4B5563" />
+              ) : (
+                <ChevronDown size={16} color="#4B5563" />
+              )}
+            </button>
+            {activeFilter === 'assigned' && (
+              <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 500, marginTop: 4 }}>
+                <Assign_to
+                  initialSelected={selectedAssignedMembers}
+                  onApply={(selected) => {
+                    setSelectedAssignedMembers(selected);
+                    setCurrentPage(1);
+                    setActiveFilter(null);
+                  }}
+                  onClear={() => {
+                    setSelectedAssignedMembers([]);
+                    setCurrentPage(1);
+                    setActiveFilter(null);
+                  }}
+                  onClose={() => setActiveFilter(null)}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Reset Filters */}
           <button
             onClick={() => {
@@ -967,6 +1043,7 @@ const Leads = () => {
               setSelectedPriorities([]);
               setSelectedSources([]);
               setFollowUpFilter(null);
+              setSelectedAssignedMembers([]);
               setCurrentPage(1);
               setActiveFilter(null);
             }}
@@ -1031,16 +1108,16 @@ const Leads = () => {
                     else if (val === "newest") apiSort = "-created_at";
                     else if (val === "a-z") apiSort = "name";
                     else if (val === "z-a") apiSort = "-name";
-                    
+
                     setSortQuery(apiSort);
                     setCurrentPage(1);
                     setActiveFilter(null);
                   }}
                   defaultValue={
                     sortQuery === "created_at" ? "oldest" :
-                    sortQuery === "-created_at" ? "newest" :
-                    sortQuery === "name" ? "a-z" :
-                    sortQuery === "-name" ? "z-a" : "newest"
+                      sortQuery === "-created_at" ? "newest" :
+                        sortQuery === "name" ? "a-z" :
+                          sortQuery === "-name" ? "z-a" : "newest"
                   }
                 />
               </div>
@@ -1088,7 +1165,7 @@ const Leads = () => {
               "Message": 58,
               "Priority": 60,
               "Lead Source": 79,
-              "Next Followup": 91,
+              "Followup": 91,
               "Actions": 132,
             };
             const translationMap: Record<string, string> = {
@@ -1100,7 +1177,7 @@ const Leads = () => {
               "Message": t("leads.colMessage"),
               "Priority": t("leads.colPriority"),
               "Lead Source": t("leads.colSource"),
-              "Next Followup": t("leads.colNextFollowup"),
+              "Followup": t("leads.colNextFollowup"),
               "Actions": t("common.actions"),
             };
             return (
@@ -1142,11 +1219,11 @@ const Leads = () => {
             leadsList
               .filter((lead) => {
                 // 1. Assigned member filter
-                if (selectedAssignedMember !== "Assigned to") {
+                if (selectedAssignedMembers.length > 0) {
                   const assignedName = lead.assigned_to
                     ? `${lead.assigned_to.first_name} ${lead.assigned_to.last_name}`
                     : "Unassigned";
-                  if (assignedName !== selectedAssignedMember) return false;
+                  if (!selectedAssignedMembers.includes(assignedName)) return false;
                 }
 
                 // 2. Status filter (if multi-selected, or not filtered by server)
@@ -1260,9 +1337,13 @@ const Leads = () => {
                       justifyContent: "center",
                       alignItems: "flex-start",
                       gap: 8,
-                      flexShrink: 0
+                      flexShrink: 0,
+                      position: "relative",
                     }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                      <div
+                        onClick={() => setOpenCreatedbyDropdown(openCreatedbyDropdown === index ? null : index)}
+                        style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
+                      >
                         <span style={{
                           color: "var(--Foundation-neutral-neutral-800, #464646)",
                           fontFamily: "Inter, sans-serif",
@@ -1275,7 +1356,7 @@ const Leads = () => {
                             : "Unassigned"}
                         </span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                          <path d="M7 10L12.0008 14.58L17 10" stroke="#141414" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M7 10L12.0008 14.58L17 10" stroke="#141414" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
                       <span style={{
@@ -1287,6 +1368,47 @@ const Leads = () => {
                       }}>
                         {lead.updated_at ? new Date(lead.updated_at).toLocaleDateString("en-GB") : "N/A"}
                       </span>
+                      {openCreatedbyDropdown === index && (
+                        <Createdby
+                          selectedOption={
+                            lead.assigned_to
+                              ? `${lead.assigned_to.first_name} ${lead.assigned_to.last_name}`
+                              : "All Sales"
+                          }
+                          onChange={async (optionName) => {
+                            if (optionName === "All Sales" || optionName === "Unassigned") {
+                              try {
+                                await updateLead({
+                                  id: lead.id,
+                                  body: { assigned_to_id: null }
+                                }).unwrap();
+                                toast.success("Lead unassigned successfully!");
+                              } catch (err) {
+                                console.error(err);
+                                toast.error("Failed to unassign lead.");
+                              }
+                            } else {
+                              const found = salesMembersList.find(m => `${m.first_name} ${m.last_name}` === optionName);
+                              if (found) {
+                                try {
+                                  await updateLead({
+                                    id: lead.id,
+                                    body: { assigned_to_id: found.id }
+                                  }).unwrap();
+                                  toast.success(`Lead assigned to ${optionName}!`);
+                                } catch (err) {
+                                  console.error(err);
+                                  toast.error("Failed to assign lead.");
+                                }
+                              } else {
+                                toast.error(`Member "${optionName}" not found in database.`);
+                              }
+                            }
+                            setOpenCreatedbyDropdown(null);
+                          }}
+                          onClickOutside={() => setOpenCreatedbyDropdown(null)}
+                        />
+                      )}
                     </div>
 
                     {/* Status with dropdown */}
@@ -1547,31 +1669,31 @@ const Leads = () => {
                     {/* Actions */}
                     <div style={{ width: 132, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, position: "relative" }} ref={(el) => { actionMenuRefs.current[index] = el; }}>
                       {/* Call Icon */}
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="19.2" 
-                        height="19.2" 
-                        viewBox="0 0 22 22" 
-                        fill="none" 
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="19.2"
+                        height="19.2"
+                        viewBox="0 0 22 22"
+                        fill="none"
                         style={{ cursor: "pointer", flexShrink: 0 }}
                         onClick={() => { if (lead.phone) window.location.href = `tel:${lead.phone}`; }}
                       >
-                        <path 
-                          d="M11.4711 4.92618C12.671 5.12727 13.7609 5.69399 14.6311 6.56236C15.5012 7.43072 16.0645 8.51846 16.2706 9.71589M11.6543 1.00024C13.7884 1.3613 15.7348 2.37135 17.2827 3.91155C18.8307 5.45633 19.8382 7.39872 20.2 9.5285M18.533 18.0019C18.533 18.0019 17.3743 19.1399 17.0903 19.4736C16.6278 19.9672 16.0828 20.2002 15.3684 20.2002C15.2997 20.2002 15.2264 20.2002 15.1577 20.1957C13.7975 20.1088 12.5336 19.5787 11.5856 19.1262C8.99344 17.8739 6.71733 16.0961 4.82592 13.8429C3.26424 11.9645 2.22007 10.2278 1.52854 8.36306C1.10263 7.22504 0.946916 6.3384 1.01561 5.50203C1.06141 4.9673 1.26749 4.52397 1.64761 4.14464L3.20929 2.58615C3.43369 2.37591 3.67184 2.26166 3.9054 2.26166C4.19392 2.26166 4.42749 2.43533 4.57404 2.58158C4.57862 2.58615 4.5832 2.59072 4.58778 2.59529C4.86714 2.8558 5.13276 3.12545 5.41212 3.41338C5.55409 3.55963 5.70064 3.70588 5.84719 3.8567L7.09745 5.10441C7.5829 5.58886 7.5829 6.03676 7.09745 6.52121C6.96464 6.65375 6.83641 6.78629 6.7036 6.91426C6.3189 7.30731 6.6211 7.00573 6.22267 7.36221C6.21351 7.37135 6.20435 7.37592 6.19977 7.38507C5.80591 7.77811 5.87919 8.16202 5.96162 8.42253C5.9662 8.43624 5.97078 8.44995 5.97536 8.46366C6.30052 9.24976 6.75849 9.99016 7.4546 10.8722L7.45918 10.8768C8.72318 12.4307 10.0559 13.6419 11.526 14.5696C11.7137 14.6885 11.9061 14.7844 12.0893 14.8759C12.2541 14.9581 12.4098 15.0358 12.5426 15.1181C12.561 15.1272 12.5793 15.1409 12.5976 15.1501C12.7533 15.2278 12.8999 15.2643 13.051 15.2643C13.4311 15.2643 13.6693 15.0267 13.7471 14.949L14.6448 14.0531C14.8005 13.8977 15.0478 13.7104 15.3363 13.7104C15.6203 13.7104 15.8538 13.8886 15.9958 14.044C16.0004 14.0486 16.0004 14.0486 16.005 14.0531L18.5284 16.5714C19.0001 17.0376 18.533 18.0019 18.533 18.0019Z" 
-                          stroke="var(--Foundation-brand-brand-500, #00236F)" 
-                          strokeWidth={2} 
-                          strokeLinecap="round" 
+                        <path
+                          d="M11.4711 4.92618C12.671 5.12727 13.7609 5.69399 14.6311 6.56236C15.5012 7.43072 16.0645 8.51846 16.2706 9.71589M11.6543 1.00024C13.7884 1.3613 15.7348 2.37135 17.2827 3.91155C18.8307 5.45633 19.8382 7.39872 20.2 9.5285M18.533 18.0019C18.533 18.0019 17.3743 19.1399 17.0903 19.4736C16.6278 19.9672 16.0828 20.2002 15.3684 20.2002C15.2997 20.2002 15.2264 20.2002 15.1577 20.1957C13.7975 20.1088 12.5336 19.5787 11.5856 19.1262C8.99344 17.8739 6.71733 16.0961 4.82592 13.8429C3.26424 11.9645 2.22007 10.2278 1.52854 8.36306C1.10263 7.22504 0.946916 6.3384 1.01561 5.50203C1.06141 4.9673 1.26749 4.52397 1.64761 4.14464L3.20929 2.58615C3.43369 2.37591 3.67184 2.26166 3.9054 2.26166C4.19392 2.26166 4.42749 2.43533 4.57404 2.58158C4.57862 2.58615 4.5832 2.59072 4.58778 2.59529C4.86714 2.8558 5.13276 3.12545 5.41212 3.41338C5.55409 3.55963 5.70064 3.70588 5.84719 3.8567L7.09745 5.10441C7.5829 5.58886 7.5829 6.03676 7.09745 6.52121C6.96464 6.65375 6.83641 6.78629 6.7036 6.91426C6.3189 7.30731 6.6211 7.00573 6.22267 7.36221C6.21351 7.37135 6.20435 7.37592 6.19977 7.38507C5.80591 7.77811 5.87919 8.16202 5.96162 8.42253C5.9662 8.43624 5.97078 8.44995 5.97536 8.46366C6.30052 9.24976 6.75849 9.99016 7.4546 10.8722L7.45918 10.8768C8.72318 12.4307 10.0559 13.6419 11.526 14.5696C11.7137 14.6885 11.9061 14.7844 12.0893 14.8759C12.2541 14.9581 12.4098 15.0358 12.5426 15.1181C12.561 15.1272 12.5793 15.1409 12.5976 15.1501C12.7533 15.2278 12.8999 15.2643 13.051 15.2643C13.4311 15.2643 13.6693 15.0267 13.7471 14.949L14.6448 14.0531C14.8005 13.8977 15.0478 13.7104 15.3363 13.7104C15.6203 13.7104 15.8538 13.8886 15.9958 14.044C16.0004 14.0486 16.0004 14.0486 16.005 14.0531L18.5284 16.5714C19.0001 17.0376 18.533 18.0019 18.533 18.0019Z"
+                          stroke="var(--Foundation-brand-brand-500, #00236F)"
+                          strokeWidth={2}
+                          strokeLinecap="round"
                           strokeLinejoin="round"
                         />
                       </svg>
                       <img src={whatsappIcon} alt="WhatsApp" width={24} height={24} style={{ cursor: "pointer", strokeWidth: 2, stroke: "var(--Foundation-neutral-neutral-800, #464646)" }} />
                       <img src={filePlusIcon} alt="Add File" width={24} height={24} style={{ cursor: "pointer", strokeWidth: 2, stroke: "var(--Foundation-neutral-neutral-800, #464646)" }} onClick={() => { setActiveLead(lead); setIsLeadFormOpen(true); }} />
-                      
+
                       {/* Three dots menu */}
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setOpenActionMenu(openActionMenu === index ? null : index)}>
-                        <path d="M12 3C11.175 3 10.5 3.675 10.5 4.5C10.5 5.325 11.175 6 12 6C12.825 6 13.5 5.325 13.5 4.5C13.5 3.675 12.825 3 12 3ZM12 18C11.175 18 10.5 18.675 10.5 19.5C10.5 20.325 11.175 21 12 21C12.825 21 13.5 20.325 13.5 19.5C13.5 18.675 12.825 18 12 18ZM12 10.5C11.175 10.5 10.5 11.175 10.5 12C10.5 12.825 11.175 13.5 12 13.5C12.825 13.5 13.5 12.825 13.5 12C13.5 11.175 12.825 10.5 12 10.5Z" fill="#464646"/>
+                        <path d="M12 3C11.175 3 10.5 3.675 10.5 4.5C10.5 5.325 11.175 6 12 6C12.825 6 13.5 5.325 13.5 4.5C13.5 3.675 12.825 3 12 3ZM12 18C11.175 18 10.5 18.675 10.5 19.5C10.5 20.325 11.175 21 12 21C12.825 21 13.5 20.325 13.5 19.5C13.5 18.675 12.825 18 12 18ZM12 10.5C11.175 10.5 10.5 11.175 10.5 12C10.5 12.825 11.175 13.5 12 13.5C12.825 13.5 13.5 12.825 13.5 12C13.5 11.175 12.825 10.5 12 10.5Z" fill="#464646" />
                       </svg>
-      
+
                       {/* Dropdown Menu */}
                       {openActionMenu === index && (
                         <div style={{
@@ -1589,7 +1711,7 @@ const Leads = () => {
                           gap: 4
                         }}>
                           {/* Notes */}
-                          <div 
+                          <div
                             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", width: "100%", boxSizing: "border-box", borderRadius: 8 }}
                             onMouseEnter={(e) => e.currentTarget.style.background = "#F3F4F6"}
                             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -1600,20 +1722,20 @@ const Leads = () => {
                           </div>
 
                           {/* Status timeline */}
-                          <div 
+                          <div
                             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", width: "100%", boxSizing: "border-box", borderRadius: 8 }}
                             onMouseEnter={(e) => e.currentTarget.style.background = "#F3F4F6"}
                             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                             onClick={() => { setActiveLead(lead); setIsStatusTimelineOpen(true); setOpenActionMenu(null); }}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 18 16" fill="none">
-                              <path d="M1 7.66608H5L7.04044 1L11.4382 15L12.9903 7.66608H17" stroke="#464646" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M1 7.66608H5L7.04044 1L11.4382 15L12.9903 7.66608H17" stroke="#464646" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                             <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#141414", whiteSpace: "nowrap" }}>Status timeline</span>
                           </div>
 
                           {/* Convert to deal */}
-                          <div 
+                          <div
                             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", width: "100%", boxSizing: "border-box", borderRadius: 8 }}
                             onMouseEnter={(e) => e.currentTarget.style.background = "#F3F4F6"}
                             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -1624,7 +1746,7 @@ const Leads = () => {
                           </div>
 
                           {/* Edit info */}
-                          <div 
+                          <div
                             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", width: "100%", boxSizing: "border-box", borderRadius: 8 }}
                             onMouseEnter={(e) => e.currentTarget.style.background = "#F3F4F6"}
                             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -1635,14 +1757,14 @@ const Leads = () => {
                           </div>
 
                           {/* Delete */}
-                          <div 
+                          <div
                             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", width: "100%", boxSizing: "border-box", borderRadius: 8 }}
                             onMouseEnter={(e) => e.currentTarget.style.background = "#FEF2F2"}
                             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                             onClick={(e) => openDeleteModal(e, lead)}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                              <path d="M4 6.17647H20M10 16.7647V10.4118M14 16.7647V10.4118M16 21H8C6.89543 21 6 20.0519 6 18.8824V7.23529C6 6.65052 6.44772 6.17647 7 6.17647H17C17.5523 6.17647 18 6.65052 18 7.23529V18.8824C18 20.0519 17.1046 21 16 21ZM10 6.17647H14C14.5523 6.17647 15 5.70242 15 5.11765V4.05882C15 3.47405 14.5523 3 14 3H10C9.44772 3 9 3.47405 9 4.05882V5.11765C9 5.70242 9.44772 6.17647 10 6.17647Z" stroke="#A80D0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M4 6.17647H20M10 16.7647V10.4118M14 16.7647V10.4118M16 21H8C6.89543 21 6 20.0519 6 18.8824V7.23529C6 6.65052 6.44772 6.17647 7 6.17647H17C17.5523 6.17647 18 6.65052 18 7.23529V18.8824C18 20.0519 17.1046 21 16 21ZM10 6.17647H14C14.5523 6.17647 15 5.70242 15 5.11765V4.05882C15 3.47405 14.5523 3 14 3H10C9.44772 3 9 3.47405 9 4.05882V5.11765C9 5.70242 9.44772 6.17647 10 6.17647Z" stroke="#A80D0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                             <span style={{
                               color: "var(--Foundation-error-red-700, #A80D0B)",
@@ -1677,7 +1799,7 @@ const Leads = () => {
       )}
       {isEditLeadOpen && activeLead && (
         <ModalOverlay onClose={() => { setIsEditLeadOpen(false); setActiveLead(null); }}>
-          <Edit_lead_info 
+          <Edit_lead_info
             leadsName={activeLead.name}
             initialData={{
               id: activeLead.id,
@@ -1686,17 +1808,17 @@ const Leads = () => {
               phoneNumber: activeLead.phone,
               nextFollowup: activeLead.next_follow_up ? activeLead.next_follow_up.split('T')[0] : "",
             }}
-            onClose={() => { setIsEditLeadOpen(false); setActiveLead(null); }} 
+            onClose={() => { setIsEditLeadOpen(false); setActiveLead(null); }}
           />
         </ModalOverlay>
       )}
       {isConvertToDealOpen && activeLead && (
         <ModalOverlay onClose={() => { setIsConvertToDealOpen(false); setActiveLead(null); }}>
-          <Convert_to_deal 
+          <Convert_to_deal
             leadId={activeLead.id}
             leadName={activeLead.name}
             companyName={activeLead.company_name || ""}
-            onClose={() => { setIsConvertToDealOpen(false); setActiveLead(null); }} 
+            onClose={() => { setIsConvertToDealOpen(false); setActiveLead(null); }}
             onConvert={handleConvertToDeal}
           />
         </ModalOverlay>

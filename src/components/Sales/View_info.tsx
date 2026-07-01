@@ -44,7 +44,36 @@ export const View_info: React.FC<ViewInfoProps> = ({
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
 
   const countries = ['Egypt', 'Saudi Arabia', 'UAE', 'USA'];
-  const cities = ['Cairo', 'Giza', 'Riyadh', 'Dubai', 'New York'];
+  const cities = [
+    "Cairo",
+    "Giza",
+    "Alexandria",
+    "Qalyubia",
+    "Sharqia",
+    "Gharbia",
+    "Monufia",
+    "Beheira",
+    "Dakahlia",
+    "Damietta",
+    "Port Said",
+    "Ismailia",
+    "Suez",
+    "North Sinai",
+    "South Sinai",
+    "Kafr El Sheikh",
+    "Fayoum",
+    "Beni Suef",
+    "Minya",
+    "Assiut",
+    "Sohag",
+    "Qena",
+    "Luxor",
+    "Aswan",
+    "Red Sea",
+    "New Valley",
+    "Matrouh",
+    "Other",
+  ];
 
   const handleSave = () => {
     if (onSave) {
@@ -382,6 +411,8 @@ export const View_info: React.FC<ViewInfoProps> = ({
                     background: "#FFF",
                     boxShadow: "0px 2px 4px rgba(0,0,0,0.17)",
                     boxSizing: "border-box",
+                    maxHeight: 200,
+                    overflowY: "auto",
                   }}
                 >
                   {cities.map((ct) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import whatsappIcon from '../assets/ic_baseline-whatsapp.svg';
 import egyptMap from '../assets/e05b9827c703ebae7eecb4a5cb3d31a12982d2db.png';
@@ -7,13 +7,39 @@ import Veiw_More_Task from '../components/Sales/Veiw_More_Task';
 import View_More_Sales_Report from '../components/Sales/View_More_Sales_Report';
 import Month_filter from '../components/Filteration_Manager/Month_filter';
 import Members_filter from '../components/Filteration_Manager/Members_filter';
+import Team_Revenue_Target from '../components/Dashboard/Team_Revenue_target';
 
 const Overview: React.FC = () => {
   const [isTaskDrawerOpen, setIsTaskDrawerOpen] = useState(false);
   const [isSalesReportOpen, setIsSalesReportOpen] = useState(false);
+  const [isTeamRevenueOpen, setIsTeamRevenueOpen] = useState(false);
   const [openMonthFilter, setOpenMonthFilter] = useState<string | null>(null);
   const [openMembersFilter, setOpenMembersFilter] = useState<string | null>(null);
-  const [selectedMember, setSelectedMember] = useState("All members");
+  const [selectedMember, setSelectedMember] = useState("All Sales");
+  const [revenueMonth, setRevenueMonth] = useState(4);
+  const [revenueYear, setRevenueYear] = useState(2026);
+  const [showRevenuePicker, setShowRevenuePicker] = useState(false);
+  const revenuePickerRef = useRef<HTMLDivElement>(null);
+
+  const [rankingMonth, setRankingMonth] = useState(4);
+  const [rankingYear, setRankingYear] = useState(2026);
+  const [showRankingPicker, setShowRankingPicker] = useState(false);
+  const rankingPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (revenuePickerRef.current && !revenuePickerRef.current.contains(event.target as Node)) {
+        setShowRevenuePicker(false);
+      }
+      if (rankingPickerRef.current && !rankingPickerRef.current.contains(event.target as Node)) {
+        setShowRankingPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
   const cards = [
     {
       title: "Total Deals",
@@ -99,7 +125,7 @@ const Overview: React.FC = () => {
       { status: "No answer",      value: 30 },
       { status: "Deal",           value: 15 },
     ];
-    if (selectedMember === "All members") {
+    if (selectedMember === "All Sales") {
       return baseData;
     }
     const hash = selectedMember.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -252,30 +278,123 @@ const Overview: React.FC = () => {
                      alignItems: "center",
                      alignSelf: "stretch"
                    }}>
-                     <span style={{ fontSize: 18, color: "#141414", fontFamily: "Inter, sans-serif", fontWeight: 400 }}>Top Performers Table</span>
-                     <div style={{ position: "relative" }}>
-                       <button onClick={() => setOpenMonthFilter(openMonthFilter === 'top-performers' ? null : 'top-performers')} style={{
-                         display: "flex",
-                         alignItems: "center",
-                         gap: 8,
-                         padding: "8px 12px",
-                         borderRadius: 8,
-                         border: "1px solid #D4D5D8",
-                         background: "#FFF",
-                         color: "#4B5563",
-                         fontSize: 14,
-                         fontFamily: "Inter, sans-serif",
-                         cursor: "pointer"
-                       }}>
-                         This month
-                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                       </button>
-                       {openMonthFilter === 'top-performers' && (
-                         <div style={{ position: "absolute", top: "100%", right: 0, zIndex: 10, marginTop: 4 }}>
-                           <Month_filter onChange={() => setOpenMonthFilter(null)} onClickOutside={() => setOpenMonthFilter(null)} />
-                         </div>
-                       )}
-                     </div>
+                      <span style={{ fontSize: 18, color: "#141414", fontFamily: "Inter, sans-serif", fontWeight: 400 }}>Sales Ranking Table</span>
+                      <div ref={rankingPickerRef} style={{ position: "relative" }}>
+                        <div
+                          onClick={() => setShowRankingPicker(!showRankingPicker)}
+                          style={{
+                            borderRadius: "12px",
+                            border: "1px solid var(--Foundation-neutral-neutral-100, #D4D5D8)",
+                            display: "flex",
+                            height: "40px",
+                            padding: "0 12px",
+                            alignItems: "center",
+                            gap: "8px",
+                            background: "#FFF",
+                            cursor: "pointer",
+                            userSelect: "none",
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: "var(--Foundation-neutral-neutral-800, #464646)",
+                              fontFamily: "Inter, sans-serif",
+                              fontSize: "16px",
+                              fontWeight: 400,
+                            }}
+                          >
+                            {String(rankingMonth).padStart(2, "0")} - {rankingYear}
+                          </span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                            <path d="M3.95833 7.42855H15.625M5.46627 2.5V3.78586M13.9583 2.5V3.78571M13.9583 3.78571H5.625C4.24429 3.78571 3.125 4.93697 3.125 6.35712V14.9286C3.125 16.3487 4.24429 17.5 5.625 17.5H13.9583C15.339 17.5 16.4583 16.3487 16.4583 14.9286L16.4583 6.35712C16.4583 4.93697 15.339 3.78571 13.9583 3.78571ZM6.04167 10.4286H13.5417M6.04167 13.8571H13.5417" stroke="#363636" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+
+                        {showRankingPicker && (
+                          <div style={{
+                            position: "absolute",
+                            top: "100%",
+                            right: 0,
+                            zIndex: 10,
+                            marginTop: 8,
+                            background: "#FFF",
+                            borderRadius: "12px",
+                            border: "1px solid #E5E7EB",
+                            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+                            padding: "16px",
+                            width: "280px",
+                            fontFamily: "Inter, sans-serif"
+                          }}>
+                            {/* Year Selector */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRankingYear(y => y - 1);
+                                }}
+                                style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }}
+                              >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#464646" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                              </button>
+                              <span style={{ fontSize: "16px", fontWeight: 600, color: "#141414" }}>{rankingYear}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRankingYear(y => y + 1);
+                                }}
+                                style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }}
+                              >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#464646" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                              </button>
+                            </div>
+                            
+                            {/* Months Grid */}
+                            <div style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(3, 1fr)",
+                              gap: "8px"
+                            }}>
+                              {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m, idx) => {
+                                const monthNum = idx + 1;
+                                const isSelected = rankingMonth === monthNum;
+                                return (
+                                  <div
+                                    key={m}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setRankingMonth(monthNum);
+                                      setShowRankingPicker(false);
+                                    }}
+                                    style={{
+                                      height: "36px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      borderRadius: "8px",
+                                      cursor: "pointer",
+                                      fontSize: "14px",
+                                      fontWeight: isSelected ? 600 : 400,
+                                      background: isSelected ? "var(--Foundation-brand-brand-500, #00236F)" : "transparent",
+                                      color: isSelected ? "#FFF" : "#464646",
+                                      transition: "background 0.15s ease, color 0.15s ease"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (!isSelected) e.currentTarget.style.background = "#F3F4F6";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (!isSelected) e.currentTarget.style.background = "transparent";
+                                    }}
+                                  >
+                                    {m}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                    </div>
                    
                    {/* The table */}
@@ -449,7 +568,23 @@ const Overview: React.FC = () => {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
             <span style={{ fontSize: 16, fontWeight: 500, color: "#111827", fontFamily: "Inter, sans-serif" }}>Sales Funnel Performance</span>
             <div style={{ display: "flex", gap: 8 }}>
-              <button style={{ padding: "6px 12px", border: "1px solid #D4D5D8", borderRadius: 8, background: "#FFF", fontSize: 13, color: "#374151", fontFamily: "Inter, sans-serif", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>All Sales <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => setOpenMembersFilter(openMembersFilter === 'sales-funnel' ? null : 'sales-funnel')}
+                  style={{ padding: "6px 12px", border: "1px solid #D4D5D8", borderRadius: 8, background: "#FFF", fontSize: 13, color: "#374151", fontFamily: "Inter, sans-serif", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                >
+                  {selectedMember} <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                {openMembersFilter === 'sales-funnel' && (
+                  <div style={{ position: "absolute", top: "100%", right: 0, zIndex: 10, marginTop: 4 }}>
+                    <Members_filter
+                      selectedOption={selectedMember}
+                      onChange={(option) => { setSelectedMember(option); setOpenMembersFilter(null); }}
+                      onClickOutside={() => setOpenMembersFilter(null)}
+                    />
+                  </div>
+                )}
+              </div>
               <div style={{ position: "relative" }}>
                 <button onClick={() => setOpenMonthFilter(openMonthFilter === 'sales-funnel' ? null : 'sales-funnel')} style={{ padding: "6px 12px", border: "1px solid #D4D5D8", borderRadius: 8, background: "#FFF", fontSize: 13, color: "#374151", fontFamily: "Inter, sans-serif", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>This month <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg></button>
                 {openMonthFilter === 'sales-funnel' && (
@@ -504,12 +639,120 @@ const Overview: React.FC = () => {
         }}>
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", alignSelf: "stretch", width: "100%" }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: "#111827", fontFamily: "Inter, sans-serif" }}>Team Revenue Target</span>
-            <div style={{ position: "relative" }}>
-              <button onClick={() => setOpenMonthFilter(openMonthFilter === 'team-revenue' ? null : 'team-revenue')} style={{ padding: "6px 12px", border: "1px solid #D4D5D8", borderRadius: 8, background: "#FFF", fontSize: 13, color: "#374151", fontFamily: "Inter, sans-serif", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>This Month <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg></button>
-              {openMonthFilter === 'team-revenue' && (
-                <div style={{ position: "absolute", top: "100%", right: 0, zIndex: 10, marginTop: 4 }}>
-                  <Month_filter onChange={() => setOpenMonthFilter(null)} onClickOutside={() => setOpenMonthFilter(null)} />
+            <span style={{ fontSize: 16, fontWeight: 500, color: "#111827", fontFamily: "Inter, sans-serif" }}>Company Revenue Target</span>
+            <div ref={revenuePickerRef} style={{ position: "relative" }}>
+              <div
+                onClick={() => setShowRevenuePicker(!showRevenuePicker)}
+                style={{
+                  borderRadius: "12px",
+                  border: "1px solid var(--Foundation-neutral-neutral-100, #D4D5D8)",
+                  display: "flex",
+                  height: "40px",
+                  padding: "0 12px",
+                  alignItems: "center",
+                  gap: "8px",
+                  background: "#FFF",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+              >
+                <span
+                  style={{
+                    color: "var(--Foundation-neutral-neutral-800, #464646)",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: "16px",
+                    fontWeight: 400,
+                  }}
+                >
+                  {String(revenueMonth).padStart(2, "0")} - {revenueYear}
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M3.95833 7.42855H15.625M5.46627 2.5V3.78586M13.9583 2.5V3.78571M13.9583 3.78571H5.625C4.24429 3.78571 3.125 4.93697 3.125 6.35712V14.9286C3.125 16.3487 4.24429 17.5 5.625 17.5H13.9583C15.339 17.5 16.4583 16.3487 16.4583 14.9286L16.4583 6.35712C16.4583 4.93697 15.339 3.78571 13.9583 3.78571ZM6.04167 10.4286H13.5417M6.04167 13.8571H13.5417" stroke="#363636" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+
+              {showRevenuePicker && (
+                <div style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  zIndex: 10,
+                  marginTop: 8,
+                  background: "#FFF",
+                  borderRadius: "12px",
+                  border: "1px solid #E5E7EB",
+                  boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+                  padding: "16px",
+                  width: "280px",
+                  fontFamily: "Inter, sans-serif"
+                }}>
+                  {/* Year Selector */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRevenueYear(y => y - 1);
+                      }}
+                      style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#464646" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                    <span style={{ fontSize: "16px", fontWeight: 600, color: "#141414" }}>{revenueYear}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRevenueYear(y => y + 1);
+                      }}
+                      style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#464646" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                  </div>
+                  
+                  {/* Months Grid */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "8px"
+                  }}>
+                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m, idx) => {
+                      const monthNum = idx + 1;
+                      const isSelected = revenueMonth === monthNum;
+                      return (
+                        <div
+                          key={m}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRevenueMonth(monthNum);
+                            setShowRevenuePicker(false);
+                          }}
+                          style={{
+                            height: "36px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            fontWeight: isSelected ? 600 : 400,
+                            background: isSelected ? "var(--Foundation-brand-brand-500, #00236F)" : "transparent",
+                            color: isSelected ? "#FFF" : "#464646",
+                            transition: "background 0.15s ease, color 0.15s ease"
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) e.currentTarget.style.background = "#F3F4F6";
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) e.currentTarget.style.background = "transparent";
+                          }}
+                        >
+                          {m}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -575,7 +818,7 @@ const Overview: React.FC = () => {
                     </div>
                   </div>
                 ))}
-                <span style={{ fontSize: 12, color: "#1D4ED8", textDecoration: "underline", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>View All</span>
+                <span onClick={() => setIsTeamRevenueOpen(true)} style={{ fontSize: 12, color: "#1D4ED8", textDecoration: "underline", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>View All</span>
               </div>
             </div>
           </div>
@@ -598,7 +841,33 @@ const Overview: React.FC = () => {
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
             <span style={{ fontSize: 16, fontWeight: 500, color: "#111827", fontFamily: "Inter, sans-serif" }}>Revenue Performance</span>
-            <button style={{ padding: "6px 12px", border: "1px solid #D4D5D8", borderRadius: 8, background: "#FFF", fontSize: 13, color: "#374151", fontFamily: "Inter, sans-serif", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>All Sales <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => setOpenMembersFilter(openMembersFilter === 'revenue-performance' ? null : 'revenue-performance')}
+                  style={{ padding: "6px 12px", border: "1px solid #D4D5D8", borderRadius: 8, background: "#FFF", fontSize: 13, color: "#374151", fontFamily: "Inter, sans-serif", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                >
+                  {selectedMember} <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                {openMembersFilter === 'revenue-performance' && (
+                  <div style={{ position: "absolute", top: "100%", right: 0, zIndex: 10, marginTop: 4 }}>
+                    <Members_filter
+                      selectedOption={selectedMember}
+                      onChange={(option) => { setSelectedMember(option); setOpenMembersFilter(null); }}
+                      onClickOutside={() => setOpenMembersFilter(null)}
+                    />
+                  </div>
+                )}
+              </div>
+              <div style={{ position: "relative" }}>
+                <button onClick={() => setOpenMonthFilter(openMonthFilter === 'revenue-performance' ? null : 'revenue-performance')} style={{ padding: "6px 12px", border: "1px solid #D4D5D8", borderRadius: 8, background: "#FFF", fontSize: 13, color: "#374151", fontFamily: "Inter, sans-serif", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>This month <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg></button>
+                {openMonthFilter === 'revenue-performance' && (
+                  <div style={{ position: "absolute", top: "100%", right: 0, zIndex: 10, marginTop: 4 }}>
+                    <Month_filter onChange={() => setOpenMonthFilter(null)} onClickOutside={() => setOpenMonthFilter(null)} />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={[
@@ -739,6 +1008,22 @@ const Overview: React.FC = () => {
           zIndex: 1000
         }}>
           <View_More_Sales_Report onClose={() => setIsSalesReportOpen(false)} />
+        </div>
+      )}
+
+      {isTeamRevenueOpen && (
+        <div style={{
+          position: "fixed",
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000
+        }} onClick={() => setIsTeamRevenueOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <Team_Revenue_Target onClose={() => setIsTeamRevenueOpen(false)} />
+          </div>
         </div>
       )}
     </div>

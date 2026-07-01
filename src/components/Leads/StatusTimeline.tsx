@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import closeIcon from "../../assets/x-02.svg";
 import "../../styles/leads-modal-mobile.css";
 import calendarIcon from "../../assets/calendar-01.svg";
@@ -39,7 +39,14 @@ const StatusTimeline: React.FC<StatusTimelineProps> = ({
   leadName = "leads name",
   entries = DEFAULT_ENTRIES,
 }) => {
-  const { data: historyResponse, isLoading } = useGetAssignmentHistoryQuery(leadId || "", { skip: !leadId });
+  const { data: historyResponse, isLoading, refetch } = useGetAssignmentHistoryQuery(leadId || "", { skip: !leadId });
+
+  useEffect(() => {
+    if (leadId) {
+      refetch();
+    }
+  }, [leadId, refetch]);
+
   const historyList = historyResponse?.data || [];
 
   const formattedEntries: TimelineEntry[] = historyList.map((assignment) => {

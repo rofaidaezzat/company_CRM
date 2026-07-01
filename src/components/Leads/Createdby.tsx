@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-interface MembersFilterProps {
+interface CreatedbyProps {
   selectedOption?: string;
   onChange?: (option: string) => void;
   onClickOutside?: () => void;
@@ -16,7 +16,7 @@ const defaultMembers = [
   "Omar Khaled"
 ];
 
-const Members_filter: React.FC<MembersFilterProps> = ({ selectedOption: initial = "All Sales", onChange, onClickOutside }) => {
+const Createdby: React.FC<CreatedbyProps> = ({ selectedOption: initial = "All Sales", onChange, onClickOutside }) => {
   const [selected, setSelected] = useState(initial);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,7 +53,11 @@ const Members_filter: React.FC<MembersFilterProps> = ({ selectedOption: initial 
       gap: 12,
       borderRadius: 12,
       padding: 12,
-      boxSizing: "border-box"
+      boxSizing: "border-box",
+      position: "absolute",
+      top: "100%",
+      left: 0,
+      zIndex: 2000,
     }}>
       <style>
         {`
@@ -174,4 +178,4 @@ const Members_filter: React.FC<MembersFilterProps> = ({ selectedOption: initial 
   );
 };
 
-export default Members_filter;
+export default Createdby;

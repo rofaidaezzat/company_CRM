@@ -34,7 +34,36 @@ export const Add_New_Sales: React.FC<AddNewSalesProps> = ({ onClose, onSave }) =
 
   const genders = ['Male', 'Female'];
   const countries = ['Egypt', 'Saudi Arabia', 'UAE', 'USA'];
-  const cities = ['Cairo', 'Giza', 'Riyadh', 'Dubai', 'New York'];
+  const cities = [
+    "Cairo",
+    "Giza",
+    "Alexandria",
+    "Qalyubia",
+    "Sharqia",
+    "Gharbia",
+    "Monufia",
+    "Beheira",
+    "Dakahlia",
+    "Damietta",
+    "Port Said",
+    "Ismailia",
+    "Suez",
+    "North Sinai",
+    "South Sinai",
+    "Kafr El Sheikh",
+    "Fayoum",
+    "Beni Suef",
+    "Minya",
+    "Assiut",
+    "Sohag",
+    "Qena",
+    "Luxor",
+    "Aswan",
+    "Red Sea",
+    "New Valley",
+    "Matrouh",
+    "Other",
+  ];
   const roles = ['Sales member', 'Sales manager'];
 
   const isFormValid =
@@ -465,6 +494,8 @@ export const Add_New_Sales: React.FC<AddNewSalesProps> = ({ onClose, onSave }) =
                       background: "#FFF",
                       boxShadow: "0px 2px 4px rgba(0,0,0,0.17)",
                       boxSizing: "border-box",
+                      maxHeight: 200,
+                      overflowY: "auto",
                     }}
                   >
                     {cities.map((ct) => {
